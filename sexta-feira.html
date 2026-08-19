@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEXTA FEIRA — Assistente de Vendas Vitanuts</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --texto: #e8eaf0;
+    --muted: #8b93a7;
+    --acento: #4f8cff;
+    --user-bubble: #2a3444;
+    --ia-bubble: #1d2530;
+    --erro-bubble: #3a1f22;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--texto);
+  }
+  #login {
+    max-width: 320px;
+    margin: 100px auto;
+    padding: 28px 24px;
+    background: var(--card);
+    border-radius: 14px;
+    text-align: center;
+  }
+  #login h2 { margin: 0 0 4px; }
+  #login p.subtitulo { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
+  #login input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 14px;
+    border-radius: 8px;
+    border: 1px solid #2a2f3a;
+    background: #12141a;
+    color: var(--texto);
+    font-size: 14px;
+  }
+  #login button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--acento);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #login button:disabled { opacity: 0.6; cursor: default; }
+  #login p.erro { color: #ff9b9b; font-size: 13px; margin-top: 10px; }
+
+  #app {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #262b36;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+  header span { font-size: 12px; color: var(--muted); }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+  .msg.user { align-self: flex-end; background: var(--user-bubble); }
+  .msg.ia { align-self: flex-start; background: var(--ia-bubble); }
+  .msg.erro { align-self: flex-start; background: var(--erro-bubble); color: #ff9b9b; }
+  .msg.pensando { align-self: flex-start; background: var(--ia-bubble); color: var(--muted); font-style: italic; }
+
+  #pergunta-form {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid #262b36;
+    flex-shrink: 0;
+  }
+  #pergunta {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #2a2f3a;
+    background: #12141a;
+    color: var(--texto);
+    font-size: 14px;
+  }
+  #pergunta-form button {
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--acento);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #pergunta-form button:disabled { opacity: 0.5; cursor: default; }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h2>SEXTA FEIRA</h2>
+  <p class="subtitulo">Assistente de vendas — Vitanuts</p>
+  <input type="password" id="senha-input" placeholder="Senha de acesso" autocomplete="off">
+  <button id="entrar-btn">Entrar</button>
+  <p class="erro" id="login-erro" style="display:none;"></p>
+</div>
+
+<div id="app">
+  <header>
+    <h1>SEXTA FEIRA</h1>
+    <span>assistente de vendas — Vitanuts</span>
+  </header>
+  <div id="chat"></div>
+  <form id="pergunta-form">
+    <input type="text" id="pergunta" placeholder="Pergunte algo sobre vendas, pedidos ou clientes..." autocomplete="off">
+    <button type="submit" id="enviar-btn">Enviar</button>
+  </form>
+</div>
+
+<script>
+  // TROCAR pela URL /exec do Web App do Code_IA.gs (Implantar > Nova implantação > Copiar URL)
+  const WEBAPP_URL = "COLE_AQUI_A_URL_DO_SEU_WEB_APP_/exec";
+
+  const chatEl = document.getElementById("chat");
+  const formEl = document.getElementById("pergunta-form");
+  const perguntaEl = document.getElementById("pergunta");
+  const enviarBtn = document.getElementById("enviar-btn");
+  const entrarBtn = document.getElementById("entrar-btn");
+  const senhaInputEl = document.getElementById("senha-input");
+  const loginErroEl = document.getElementById("login-erro");
+
+  function senhaSalva() { return localStorage.getItem("sexta_feira_senha") || ""; }
+
+  function adicionarMensagem(texto, classe) {
+    const div = document.createElement("div");
+    div.className = "msg " + classe;
+    div.textContent = texto;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  // Mesmo padrão JSONP usado nos outros painéis da Vitanuts — evita
+  // problema de CORS entre GitHub Pages e Apps Script (uma tag
+  // <script> não sofre bloqueio de origem cruzada, diferente de fetch).
+  function chamarBackend(params) {
+    return new Promise((resolve, reject) => {
+      const callbackName = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      const timeoutId = setTimeout(() => {
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error("tempo_esgotado"));
+      }, 45000);
+      window[callbackName] = (dados) => {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(dados);
+      };
+      const query = Object.keys(params)
+        .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
+        .join("&");
+      const script = document.createElement("script");
+      script.src = WEBAPP_URL + "?" + query + "&callback=" + callbackName;
+      script.onerror = () => {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        reject(new Error("falha_de_rede"));
+      };
+      document.body.appendChild(script);
+    });
+  }
+
+  async function perguntar(pergunta) {
+    adicionarMensagem(pergunta, "user");
+    const pensandoEl = adicionarMensagem("pensando...", "pensando");
+    enviarBtn.disabled = true;
+    try {
+      const resp = await chamarBackend({ senha: senhaSalva(), pergunta: pergunta });
+      pensandoEl.remove();
+      if (resp.erro === "senha_incorreta") {
+        localStorage.removeItem("sexta_feira_senha");
+        mostrarLogin("Senha incorreta — entre de novo.");
+        return;
+      }
+      if (resp.erro) {
+        adicionarMensagem("Deu erro: " + (resp.detalhe || resp.erro), "erro");
+        return;
+      }
+      adicionarMensagem(resp.resposta, "ia");
+    } catch (e) {
+      pensandoEl.remove();
+      adicionarMensagem("Não consegui falar com o servidor (" + e.message + "). Confira sua conexão e tente de novo.", "erro");
+    } finally {
+      enviarBtn.disabled = false;
+      perguntaEl.focus();
+    }
+  }
+
+  formEl.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const pergunta = perguntaEl.value.trim();
+    if (!pergunta) return;
+    perguntaEl.value = "";
+    perguntar(pergunta);
+  });
+
+  function mostrarApp() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    if (chatEl.children.length === 0) {
+      adicionarMensagem('Oi! Pergunta algo sobre vendas, pedidos ou clientes — ex: "o cliente X comprou e voltou a comprar?" ou "quanto faturamos no mês passado?"', "ia");
+    }
+    perguntaEl.focus();
+  }
+
+  function mostrarLogin(erro) {
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login").style.display = "block";
+    if (erro) { loginErroEl.textContent = erro; loginErroEl.style.display = "block"; }
+    else { loginErroEl.style.display = "none"; }
+    entrarBtn.disabled = false;
+  }
+
+  async function tentarEntrar(senha) {
+    entrarBtn.disabled = true;
+    try {
+      const resp = await chamarBackend({ senha: senha, secao: "sync_estado" });
+      if (resp.erro === "senha_incorreta") {
+        localStorage.removeItem("sexta_feira_senha");
+        mostrarLogin("Senha incorreta.");
+        return;
+      }
+      localStorage.setItem("sexta_feira_senha", senha);
+      mostrarApp();
+    } catch (e) {
+      mostrarLogin("Não consegui falar com o servidor — confira se a WEBAPP_URL está certa no código.");
+    }
+  }
+
+  entrarBtn.addEventListener("click", () => {
+    const senha = senhaInputEl.value;
+    if (!senha) return;
+    tentarEntrar(senha);
+  });
+  senhaInputEl.addEventListener("keydown", (ev) => { if (ev.key === "Enter") entrarBtn.click(); });
+
+  // se já tem senha salva de uma visita anterior, tenta entrar direto
+  if (senhaSalva()) tentarEntrar(senhaSalva());
+</script>
+</body>
+</html>
