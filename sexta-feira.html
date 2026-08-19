@@ -4,129 +4,236 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SEXTA FEIRA — Assistente de Vendas Vitanuts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f1115;
-    --card: #171a21;
-    --texto: #e8eaf0;
-    --muted: #8b93a7;
-    --acento: #4f8cff;
-    --user-bubble: #2a3444;
-    --ia-bubble: #1d2530;
-    --erro-bubble: #3a1f22;
+    --bg: #0b0c10;
+    --bg-glow: radial-gradient(circle at 15% -10%, rgba(124, 108, 255, 0.16), transparent 45%),
+               radial-gradient(circle at 85% 0%, rgba(79, 140, 255, 0.10), transparent 40%);
+    --card: #15161d;
+    --card-borda: #23242f;
+    --texto: #eceef4;
+    --muted: #8a8ea3;
+    --muted-fraco: #5c6076;
+    --acento: #7c6cff;
+    --acento-2: #4f8cff;
+    --user-bubble: #2b2c3d;
+    --ia-bubble: #17181f;
+    --ia-borda: #24252f;
+    --erro-bubble: #2e1a1d;
+    --erro-texto: #ff9b9b;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
     margin: 0;
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
+    font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg) var(--bg-glow);
+    background-attachment: fixed;
     color: var(--texto);
+    -webkit-font-smoothing: antialiased;
   }
+
+  /* ---------- tela de login ---------- */
   #login {
-    max-width: 320px;
-    margin: 100px auto;
-    padding: 28px 24px;
+    max-width: 340px;
+    margin: 12vh auto 0;
+    padding: 36px 30px;
     background: var(--card);
-    border-radius: 14px;
+    border: 1px solid var(--card-borda);
+    border-radius: 18px;
     text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   }
-  #login h2 { margin: 0 0 4px; }
-  #login p.subtitulo { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
+  #login .avatar {
+    width: 52px; height: 52px;
+    margin: 0 auto 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 18px; color: #fff;
+    letter-spacing: 0.5px;
+  }
+  #login h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 0.3px; }
+  #login p.subtitulo { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
   #login input {
     width: 100%;
-    padding: 12px;
-    margin-top: 14px;
-    border-radius: 8px;
-    border: 1px solid #2a2f3a;
-    background: #12141a;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--card-borda);
+    background: #0f1016;
     color: var(--texto);
     font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
   }
+  #login input:focus { border-color: var(--acento); }
   #login button {
     width: 100%;
     margin-top: 12px;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 13px;
+    border-radius: 10px;
     border: none;
-    background: var(--acento);
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
     color: #fff;
     font-weight: 600;
     font-size: 14px;
+    font-family: inherit;
     cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
   }
-  #login button:disabled { opacity: 0.6; cursor: default; }
-  #login p.erro { color: #ff9b9b; font-size: 13px; margin-top: 10px; }
+  #login button:hover:not(:disabled) { opacity: 0.92; }
+  #login button:active:not(:disabled) { transform: scale(0.98); }
+  #login button:disabled { opacity: 0.5; cursor: default; }
+  #login p.erro { color: var(--erro-texto); font-size: 13px; margin-top: 12px; margin-bottom: 0; }
 
+  /* ---------- app / chat ---------- */
   #app {
     display: none;
     flex-direction: column;
     height: 100vh;
+    max-width: 760px;
+    margin: 0 auto;
   }
   header {
     padding: 16px 20px;
-    border-bottom: 1px solid #262b36;
+    border-bottom: 1px solid var(--card-borda);
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     flex-shrink: 0;
   }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+  header .avatar {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0;
+  }
+  header .titulos { display: flex; flex-direction: column; line-height: 1.25; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: 0.3px; }
   header span { font-size: 12px; color: var(--muted); }
+  header .sair-btn {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--card-borda);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  header .sair-btn:hover { color: var(--texto); border-color: var(--muted-fraco); }
 
   #chat {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
   }
-  .msg {
-    max-width: 80%;
-    padding: 10px 14px;
-    border-radius: 12px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    font-size: 14px;
-  }
-  .msg.user { align-self: flex-end; background: var(--user-bubble); }
-  .msg.ia { align-self: flex-start; background: var(--ia-bubble); }
-  .msg.erro { align-self: flex-start; background: var(--erro-bubble); color: #ff9b9b; }
-  .msg.pensando { align-self: flex-start; background: var(--ia-bubble); color: var(--muted); font-style: italic; }
+  #chat::-webkit-scrollbar { width: 8px; }
+  #chat::-webkit-scrollbar-thumb { background: var(--card-borda); border-radius: 8px; }
 
+  .linha { display: flex; gap: 10px; max-width: 88%; animation: entrar 0.2s ease; }
+  .linha.user { align-self: flex-end; flex-direction: row-reverse; }
+  .linha.ia, .linha.erro { align-self: flex-start; }
+  @keyframes entrar { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .linha .avatar-msg {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; margin-top: 2px;
+  }
+  .linha.user .avatar-msg { background: var(--muted-fraco); }
+  .linha.ia .avatar-msg, .linha.erro .avatar-msg { background: linear-gradient(135deg, var(--acento), var(--acento-2)); }
+
+  .msg {
+    padding: 11px 15px;
+    border-radius: 14px;
+    line-height: 1.55;
+    font-size: 14.5px;
+  }
+  .msg p { margin: 0 0 8px; }
+  .msg p:last-child { margin-bottom: 0; }
+  .msg ul { margin: 4px 0 8px; padding-left: 18px; }
+  .msg strong { font-weight: 700; color: #fff; }
+  .linha.user .msg { background: var(--user-bubble); border-top-right-radius: 4px; }
+  .linha.ia .msg { background: var(--ia-bubble); border: 1px solid var(--ia-borda); border-top-left-radius: 4px; }
+  .linha.erro .msg { background: var(--erro-bubble); color: var(--erro-texto); border-top-left-radius: 4px; }
+
+  .pensando-dots { display: flex; gap: 4px; padding: 4px 2px; }
+  .pensando-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--muted-fraco);
+    animation: pulso 1.1s infinite ease-in-out;
+  }
+  .pensando-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .pensando-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes pulso { 0%, 60%, 100% { opacity: 0.25; transform: scale(0.85); } 30% { opacity: 1; transform: scale(1); } }
+
+  /* ---------- sugestões (tela vazia) ---------- */
+  #sugestoes { display: flex; flex-direction: column; gap: 8px; align-self: stretch; margin-top: 4px; }
+  #sugestoes button {
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--card-borda);
+    color: var(--texto);
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  #sugestoes button:hover { border-color: var(--acento); background: #1a1b24; }
+
+  /* ---------- input ---------- */
   #pergunta-form {
     display: flex;
     gap: 8px;
-    padding: 16px 20px;
-    border-top: 1px solid #262b36;
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--card-borda);
     flex-shrink: 0;
   }
   #pergunta {
     flex: 1;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid #2a2f3a;
-    background: #12141a;
+    padding: 13px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--card-borda);
+    background: var(--card);
     color: var(--texto);
-    font-size: 14px;
+    font-size: 14.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
   }
+  #pergunta:focus { border-color: var(--acento); }
   #pergunta-form button {
-    padding: 0 20px;
-    border-radius: 10px;
+    padding: 0 22px;
+    border-radius: 12px;
     border: none;
-    background: var(--acento);
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
     color: #fff;
     font-weight: 600;
     cursor: pointer;
     font-size: 14px;
+    font-family: inherit;
+    transition: opacity 0.15s ease, transform 0.1s ease;
   }
+  #pergunta-form button:hover:not(:disabled) { opacity: 0.92; }
+  #pergunta-form button:active:not(:disabled) { transform: scale(0.97); }
   #pergunta-form button:disabled { opacity: 0.5; cursor: default; }
 </style>
 </head>
 <body>
 
 <div id="login">
+  <div class="avatar">SF</div>
   <h2>SEXTA FEIRA</h2>
   <p class="subtitulo">Assistente de vendas — Vitanuts</p>
   <input type="password" id="senha-input" placeholder="Senha de acesso" autocomplete="off">
@@ -136,8 +243,12 @@
 
 <div id="app">
   <header>
-    <h1>SEXTA FEIRA</h1>
-    <span>assistente de vendas — Vitanuts</span>
+    <div class="avatar">SF</div>
+    <div class="titulos">
+      <h1>SEXTA FEIRA</h1>
+      <span>assistente de vendas — Vitanuts</span>
+    </div>
+    <button class="sair-btn" id="sair-btn" type="button">Sair</button>
   </header>
   <div id="chat"></div>
   <form id="pergunta-form">
@@ -147,26 +258,87 @@
 </div>
 
 <script>
-  // TROCAR pela URL /exec do Web App do Code_IA.gs (Implantar > Nova implantação > Copiar URL)
+  // URL /exec do Web App do Code_IA.gs
   const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxLl3nfcU-Cd-Sgr76uZzGQ4SWvEZunqhCJLCWCLLXFgJqX1DMStdAJBBl3jn05BJ4A/exec";
+
+  const PERGUNTAS_SUGERIDAS = [
+    "Um cliente comprou e voltou a comprar recentemente?",
+    "Quanto faturamos no mês passado?",
+    "Quais são os produtos mais vendidos esse ano?",
+    "Quais clientes não compram há mais de 60 dias?",
+  ];
 
   const chatEl = document.getElementById("chat");
   const formEl = document.getElementById("pergunta-form");
   const perguntaEl = document.getElementById("pergunta");
   const enviarBtn = document.getElementById("enviar-btn");
   const entrarBtn = document.getElementById("entrar-btn");
+  const sairBtn = document.getElementById("sair-btn");
   const senhaInputEl = document.getElementById("senha-input");
   const loginErroEl = document.getElementById("login-erro");
 
   function senhaSalva() { return localStorage.getItem("sexta_feira_senha") || ""; }
 
+  // Conversor bem simples de markdown -> HTML, só pro pouco que a
+  // Gemini costuma usar (negrito, listas, parágrafos). Escapa HTML
+  // ANTES de aplicar qualquer substituição, pra não abrir brecha de
+  // injeção via texto vindo da IA.
+  function escaparHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function markdownSimples(texto) {
+    const paragrafos = texto.split(/\n{2,}/).map(bloco => {
+      const linhas = bloco.split("\n").map(l => l.trim()).filter(Boolean);
+      const ehLista = linhas.length > 0 && linhas.every(l => /^[-*]\s+/.test(l));
+      if (ehLista) {
+        const itens = linhas.map(l => "<li>" + escaparHtml(l.replace(/^[-*]\s+/, "")).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") + "</li>").join("");
+        return "<ul>" + itens + "</ul>";
+      }
+      const linhaEscapada = escaparHtml(bloco).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+      return "<p>" + linhaEscapada + "</p>";
+    });
+    return paragrafos.join("");
+  }
+
+  function iniciais(classe) {
+    if (classe === "user") return "EU";
+    return "SF";
+  }
+
   function adicionarMensagem(texto, classe) {
-    const div = document.createElement("div");
-    div.className = "msg " + classe;
-    div.textContent = texto;
-    chatEl.appendChild(div);
+    const linha = document.createElement("div");
+    linha.className = "linha " + classe;
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar-msg";
+    avatar.textContent = iniciais(classe);
+
+    const msg = document.createElement("div");
+    msg.className = "msg";
+    if (classe === "ia") msg.innerHTML = markdownSimples(texto);
+    else msg.textContent = texto;
+
+    linha.appendChild(avatar);
+    linha.appendChild(msg);
+    chatEl.appendChild(linha);
     chatEl.scrollTop = chatEl.scrollHeight;
-    return div;
+    return linha;
+  }
+
+  function adicionarPensando() {
+    const linha = document.createElement("div");
+    linha.className = "linha ia";
+    const avatar = document.createElement("div");
+    avatar.className = "avatar-msg";
+    avatar.textContent = "SF";
+    const msg = document.createElement("div");
+    msg.className = "msg";
+    msg.innerHTML = '<div class="pensando-dots"><span></span><span></span><span></span></div>';
+    linha.appendChild(avatar);
+    linha.appendChild(msg);
+    chatEl.appendChild(linha);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return linha;
   }
 
   // Mesmo padrão JSONP usado nos outros painéis da Vitanuts — evita
@@ -201,8 +373,11 @@
   }
 
   async function perguntar(pergunta) {
+    const sugestoesEl = document.getElementById("sugestoes");
+    if (sugestoesEl) sugestoesEl.remove();
+
     adicionarMensagem(pergunta, "user");
-    const pensandoEl = adicionarMensagem("pensando...", "pensando");
+    const pensandoEl = adicionarPensando();
     enviarBtn.disabled = true;
     try {
       const resp = await chamarBackend({ senha: senhaSalva(), pergunta: pergunta });
@@ -234,12 +409,25 @@
     perguntar(pergunta);
   });
 
+  function mostrarSugestoesIniciais() {
+    adicionarMensagem('Oi! Sou a SEXTA FEIRA — pergunta algo sobre vendas, pedidos ou clientes. Alguns exemplos:', "ia");
+    const wrap = document.createElement("div");
+    wrap.id = "sugestoes";
+    PERGUNTAS_SUGERIDAS.forEach(p => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = p;
+      btn.addEventListener("click", () => perguntar(p));
+      wrap.appendChild(btn);
+    });
+    chatEl.appendChild(wrap);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
   function mostrarApp() {
     document.getElementById("login").style.display = "none";
     document.getElementById("app").style.display = "flex";
-    if (chatEl.children.length === 0) {
-      adicionarMensagem('Oi! Pergunta algo sobre vendas, pedidos ou clientes — ex: "o cliente X comprou e voltou a comprar?" ou "quanto faturamos no mês passado?"', "ia");
-    }
+    if (chatEl.children.length === 0) mostrarSugestoesIniciais();
     perguntaEl.focus();
   }
 
@@ -273,6 +461,13 @@
     tentarEntrar(senha);
   });
   senhaInputEl.addEventListener("keydown", (ev) => { if (ev.key === "Enter") entrarBtn.click(); });
+
+  sairBtn.addEventListener("click", () => {
+    localStorage.removeItem("sexta_feira_senha");
+    chatEl.innerHTML = "";
+    senhaInputEl.value = "";
+    mostrarLogin();
+  });
 
   // se já tem senha salva de uma visita anterior, tenta entrar direto
   if (senhaSalva()) tentarEntrar(senhaSalva());
