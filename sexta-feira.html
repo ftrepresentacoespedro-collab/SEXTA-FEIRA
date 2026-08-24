@@ -176,6 +176,8 @@
   .msg p:last-child { margin-bottom: 0; }
   .msg ul { margin: 4px 0 8px; padding-left: 18px; }
   .msg strong { font-weight: 700; color: #e4e5ee; }
+  .msg a { color: var(--acento-2); text-decoration: underline; text-underline-offset: 2px; }
+  .msg a:hover { color: var(--acento); }
   .linha.user .msg { background: var(--user-bubble); border-top-right-radius: 4px; }
   .linha.ia .msg { background: var(--ia-bubble); border: 1px solid var(--ia-borda); border-top-left-radius: 4px; }
   .linha.erro .msg { background: var(--erro-bubble); color: var(--erro-texto); border-top-left-radius: 4px; }
@@ -281,6 +283,19 @@
     "Quais clientes não compram há mais de 60 dias?",
   ];
 
+  // Memória de curto prazo da conversa — só em memória (some ao
+  // recarregar a página, de propósito), guarda as últimas trocas pra
+  // mandar junto no próximo pedido, senão uma pergunta de
+  // acompanhamento tipo "verifique" chega no backend sem contexto
+  // nenhum (foi exatamente isso que aconteceu antes dessa mudança).
+  let historicoConversa = [];
+  const MAX_TROCAS_HISTORICO = 3;
+  const MAX_CARACTERES_POR_TROCA = 800; // trunca só o que é ENVIADO como contexto, não o que aparece na tela
+
+  function truncar(texto, limite) {
+    return texto.length > limite ? texto.slice(0, limite) + "…" : texto;
+  }
+
   const chatEl = document.getElementById("chat");
   const formEl = document.getElementById("pergunta-form");
   const perguntaEl = document.getElementById("pergunta");
@@ -299,15 +314,26 @@
   function escaparHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+  // Aplica negrito e link markdown num trecho que JÁ passou por
+  // escaparHtml — nessa ordem de propósito, porque escaparHtml só mexe
+  // em &/</>, então [ ] ( ) sobrevivem intactos pro regex de link
+  // funcionar depois. Link restrito a http(s) — mesmo o texto vindo do
+  // nosso próprio backend confiável, não custa nada travar esquema
+  // "javascript:" por segurança.
+  function aplicarInlineMarkdown_(textoEscapado) {
+    return textoEscapado
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  }
   function markdownSimples(texto) {
     const paragrafos = texto.split(/\n{2,}/).map(bloco => {
       const linhas = bloco.split("\n").map(l => l.trim()).filter(Boolean);
       const ehLista = linhas.length > 0 && linhas.every(l => /^[-*]\s+/.test(l));
       if (ehLista) {
-        const itens = linhas.map(l => "<li>" + escaparHtml(l.replace(/^[-*]\s+/, "")).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") + "</li>").join("");
+        const itens = linhas.map(l => "<li>" + aplicarInlineMarkdown_(escaparHtml(l.replace(/^[-*]\s+/, ""))) + "</li>").join("");
         return "<ul>" + itens + "</ul>";
       }
-      const linhaEscapada = escaparHtml(bloco).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+      const linhaEscapada = aplicarInlineMarkdown_(escaparHtml(bloco)).replace(/\n/g, "<br>");
       return "<p>" + linhaEscapada + "</p>";
     });
     return paragrafos.join("");
@@ -393,7 +419,15 @@
     const pensandoEl = adicionarPensando();
     enviarBtn.disabled = true;
     try {
-      const resp = await chamarBackend({ senha: senhaSalva(), pergunta: pergunta });
+      const params = { senha: senhaSalva(), pergunta: pergunta };
+      if (historicoConversa.length > 0) {
+        const historicoPraEnviar = historicoConversa.map(h => ({
+          pergunta: truncar(h.pergunta, MAX_CARACTERES_POR_TROCA),
+          resposta: truncar(h.resposta, MAX_CARACTERES_POR_TROCA),
+        }));
+        params.historico = JSON.stringify(historicoPraEnviar);
+      }
+      const resp = await chamarBackend(params);
       pensandoEl.remove();
       if (resp.erro === "senha_incorreta") {
         localStorage.removeItem("sexta_feira_senha");
@@ -405,6 +439,8 @@
         return;
       }
       adicionarMensagem(resp.resposta, "ia");
+      historicoConversa.push({ pergunta: pergunta, resposta: resp.resposta });
+      if (historicoConversa.length > MAX_TROCAS_HISTORICO) historicoConversa.shift();
     } catch (e) {
       pensandoEl.remove();
       adicionarMensagem("Não consegui falar com o servidor (" + e.message + "). Confira sua conexão e tente de novo.", "erro");
@@ -479,6 +515,7 @@
     localStorage.removeItem("sexta_feira_senha");
     chatEl.innerHTML = "";
     senhaInputEl.value = "";
+    historicoConversa = [];
     mostrarLogin();
   });
 
