@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Ação — SEXTA FEIRA</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:        #f9f9f7;
+    --surface:     #fcfcfb;
+    --surface-2:   #f1f0ec;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --hairline:    #e1e0d9;
+    --border:      rgba(11,11,11,0.10);
+    --blue:    #2a78d6;
+    --blue-wash: rgba(42,120,214,0.10);
+    --good:     #0ca30c;
+    --good-wash: rgba(12,163,12,0.10);
+    --warning:  #b06b00;
+    --warning-wash: rgba(250,178,25,0.14);
+    --critical: #c23434;
+    --critical-wash: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --surface-2:   #232322;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --hairline:    #2c2c2a;
+      --border:      rgba(255,255,255,0.10);
+      --blue:    #3987e5;
+      --blue-wash: rgba(57,135,229,0.16);
+      --good:     #0ca30c;
+      --good-wash: rgba(12,163,12,0.16);
+      --warning:  #fab219;
+      --warning-wash: rgba(250,178,25,0.16);
+      --critical: #e66767;
+      --critical-wash: rgba(230,103,103,0.16);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { min-height: 100vh; }
+
+  /* ---------- login ---------- */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px 28px; max-width: 340px; width: 100%; text-align: center;
+  }
+  .login-card h1 { font-size: 17px; margin: 0 0 6px; }
+  .login-card p { font-size: 13px; color: var(--text-muted); margin: 0 0 20px; }
+  .login-card input {
+    width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 15px; margin-bottom: 10px;
+  }
+  .login-card button {
+    width: 100%; padding: 11px 12px; border-radius: 8px; border: none;
+    background: var(--blue); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .login-card button:active { opacity: 0.85; }
+  .login-card button:disabled { opacity: 0.5; cursor: default; }
+  .login-erro { color: var(--critical); font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .login-card select {
+    width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 15px; margin-bottom: 10px;
+  }
+
+  /* ---------- app shell ---------- */
+  #app-screen { display: none; max-width: 720px; margin: 0 auto; padding: 16px 16px 60px; }
+  header.topo {
+    position: sticky; top: 0; background: var(--page); padding: 10px 0 12px; z-index: 5;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--hairline); margin-bottom: 14px;
+  }
+  header.topo h1 { font-size: 16px; margin: 0; }
+  header.topo .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .btn-sair { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+  .resumo-topo { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .resumo-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
+  .resumo-chip b { font-size: 15px; display: block; }
+
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filtro-chip {
+    font-size: 12.5px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-secondary); cursor: pointer; user-select: none;
+  }
+  .filtro-chip.ativo { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .filtro-toggle { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; }
+
+  #lista-clientes { display: flex; flex-direction: column; gap: 10px; }
+  .cliente-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .cliente-card.contatado { opacity: 0.55; }
+  .cliente-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .cliente-nome { font-size: 14.5px; font-weight: 600; }
+  .cliente-cnpj { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .cliente-receita { text-align: right; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .cliente-receita .lbl { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
+
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .badge { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 20px; white-space: nowrap; }
+  .badge.reativacao { background: var(--critical-wash); color: var(--critical); }
+  .badge.recompra_atrasada { background: var(--warning-wash); color: var(--warning); }
+  .badge.queda_ritmo { background: var(--warning-wash); color: var(--warning); }
+  .badge.cross_sell { background: var(--blue-wash); color: var(--blue); }
+
+  .cliente-stats { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .cliente-stats span { color: var(--text-muted); }
+
+  .contato-info { font-size: 12px; color: var(--good); background: var(--good-wash); border-radius: 8px; padding: 6px 10px; margin-top: 10px; }
+
+  .acao-linha { display: flex; gap: 8px; margin-top: 12px; }
+  .acao-linha input[type="text"] {
+    flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary); font-size: 13px;
+  }
+  .btn-contatar {
+    padding: 8px 14px; border-radius: 8px; border: none; background: var(--good); color: #fff;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .btn-contatar:disabled { opacity: 0.5; cursor: default; }
+
+  .estado-vazio, .estado-erro { text-align: center; color: var(--text-muted); font-size: 13px; padding: 40px 20px; }
+  .estado-erro { color: var(--critical); }
+
+  .rodape-refresh { text-align: center; font-size: 11.5px; color: var(--text-muted); margin-top: 18px; }
+  .rodape-refresh button { background: none; border: none; color: var(--blue); font-size: 11.5px; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 4px; }
+
+  .skeleton { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; height: 88px; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Lista de Ação</h1>
+    <div id="passo-senha">
+      <p>Digite a senha de acesso</p>
+      <input type="password" id="senha-input" placeholder="Senha" autocomplete="off">
+      <button id="entrar-btn">Entrar</button>
+    </div>
+    <div id="passo-vendedor" style="display:none;">
+      <p>Quem é você?</p>
+      <select id="vendedor-select"></select>
+      <button id="ver-carteira-btn">Ver minha carteira</button>
+    </div>
+    <div class="login-erro" id="login-erro"></div>
+  </div>
+</div>
+
+<div id="app-screen">
+  <header class="topo">
+    <div>
+      <h1 id="nome-vendedor">—</h1>
+      <div class="sub" id="gerado-em-label">—</div>
+    </div>
+    <button class="btn-sair" id="sair-btn">sair</button>
+  </header>
+
+  <div class="resumo-topo" id="resumo-topo"></div>
+
+  <div class="filtros" id="filtros"></div>
+
+  <div id="lista-clientes"></div>
+
+  <div class="rodape-refresh">Cobre só clientes B2B — B2C é atribuído à plataforma, não a uma pessoa.<button id="atualizar-btn">atualizar agora</button></div>
+</div>
+
+<script>
+// =========================== CONFIGURAÇÃO — AJUSTAR ANTES DE PUBLICAR ===========================
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxLl3nfcU-Cd-Sgr76uZzGQ4SWvEZunqhCJLCWCLLXFgJqX1DMStdAJBBl3jn05BJ4A/exec";
+const TIMEOUT_REQUISICAO_MS = 20 * 1000;
+// =====================================================================================
+
+const LABELS_SINAL = {
+  reativacao: "Sumiu",
+  recompra_atrasada: "Atrasado pra recomprar",
+  queda_ritmo: "Caindo",
+  cross_sell: "Cross-sell",
+};
+
+let estadoAtual = null; // último payload da lista
+let filtroSinalAtivo = null; // null = todos
+let ocultarContatados = true;
+
+function senhaSalva() { return localStorage.getItem("lista_vendedor_senha") || ""; }
+function salvarSenha(s) { localStorage.setItem("lista_vendedor_senha", s); }
+function limparSenha() { localStorage.removeItem("lista_vendedor_senha"); }
+function vendedorSalvo() { return localStorage.getItem("lista_vendedor_nome") || ""; }
+function salvarVendedorEscolhido(nome) { localStorage.setItem("lista_vendedor_nome", nome); }
+function limparVendedorEscolhido() { localStorage.removeItem("lista_vendedor_nome"); }
+
+// incluirVendedor=false só é usado na chamada de listar_vendedores=1,
+// que acontece ANTES de escolher um nome no dropdown.
+function chamarBackend(paramsExtra, incluirVendedor) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "lvCb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    const script = document.createElement("script");
+    let concluido = false;
+
+    const limpar = () => { delete window[callbackName]; if (script.parentNode) script.parentNode.removeChild(script); };
+    const timeoutId = setTimeout(() => {
+      if (concluido) return;
+      concluido = true; limpar();
+      reject(new Error("tempo_esgotado"));
+    }, TIMEOUT_REQUISICAO_MS);
+
+    window[callbackName] = (data) => {
+      if (concluido) return;
+      concluido = true; clearTimeout(timeoutId); limpar();
+      resolve(data);
+    };
+
+    let query = "lista_vendedor=1&senha=" + encodeURIComponent(senhaSalva()) + "&callback=" + callbackName;
+    if (incluirVendedor !== false && vendedorSalvo()) query += "&vendedor=" + encodeURIComponent(vendedorSalvo());
+    query += (paramsExtra || "");
+    script.src = WEBAPP_URL + "?" + query;
+    script.onerror = () => {
+      if (concluido) return;
+      concluido = true; clearTimeout(timeoutId); limpar();
+      reject(new Error("falha_de_rede"));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+function formatCompactBRL(valor) {
+  if (valor === null || valor === undefined || isNaN(valor)) return "—";
+  const abs = Math.abs(valor);
+  const sinal = valor < 0 ? "-" : "";
+  if (abs >= 1000000) return sinal + "R$ " + (abs / 1000000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+  if (abs >= 1000) return sinal + "R$ " + (abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mil";
+  return sinal + "R$ " + abs.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function formatDataCurta(dataStr) {
+  if (!dataStr) return "—";
+  try {
+    const [y, m, d] = dataStr.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  } catch (e) { return dataStr; }
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function voltarParaPassoSenha() {
+  document.getElementById("passo-vendedor").style.display = "none";
+  document.getElementById("passo-senha").style.display = "block";
+}
+
+async function tentarEntrarComSenha(senha) {
+  salvarSenha(senha);
+  document.getElementById("login-erro").textContent = "Entrando…";
+  document.getElementById("entrar-btn").disabled = true;
+  try {
+    const resp = await chamarBackend("&listar_vendedores=1", false);
+    document.getElementById("entrar-btn").disabled = false;
+    if (resp && resp.erro === "senha_incorreta") {
+      limparSenha();
+      document.getElementById("login-erro").textContent = "Senha incorreta.";
+      return;
+    }
+    const vendedores = (resp && resp.vendedores) || [];
+    if (vendedores.length === 0) {
+      document.getElementById("login-erro").textContent = "Nenhum vendedor encontrado ainda — o backfill pode não ter terminado.";
+      return;
+    }
+    document.getElementById("vendedor-select").innerHTML =
+      vendedores.map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join("");
+    document.getElementById("login-erro").textContent = "";
+    document.getElementById("passo-senha").style.display = "none";
+    document.getElementById("passo-vendedor").style.display = "block";
+  } catch (e) {
+    document.getElementById("entrar-btn").disabled = false;
+    document.getElementById("login-erro").textContent = "Não consegui falar com o servidor — tenta de novo.";
+  }
+}
+
+async function confirmarVendedorEEntrar(nome, silencioso) {
+  salvarVendedorEscolhido(nome);
+  if (!silencioso) document.getElementById("login-erro").textContent = "Carregando carteira…";
+  try {
+    const resp = await chamarBackend("");
+    if (resp && resp.erro === "senha_incorreta") {
+      limparSenha();
+      limparVendedorEscolhido();
+      voltarParaPassoSenha();
+      document.getElementById("login-erro").textContent = "Senha incorreta.";
+      return;
+    }
+    estadoAtual = resp;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "block";
+    renderTudo();
+  } catch (e) {
+    document.getElementById("login-erro").textContent = "Não consegui falar com o servidor — tenta de novo.";
+  }
+}
+
+document.getElementById("entrar-btn").addEventListener("click", () => {
+  const senha = document.getElementById("senha-input").value;
+  if (!senha) return;
+  tentarEntrarComSenha(senha);
+});
+document.getElementById("senha-input").addEventListener("keydown", (ev) => { if (ev.key === "Enter") document.getElementById("entrar-btn").click(); });
+document.getElementById("ver-carteira-btn").addEventListener("click", () => {
+  const nome = document.getElementById("vendedor-select").value;
+  if (!nome) return;
+  confirmarVendedorEEntrar(nome, false);
+});
+document.getElementById("sair-btn").addEventListener("click", () => {
+  limparSenha();
+  limparVendedorEscolhido();
+  document.getElementById("app-screen").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("senha-input").value = "";
+  document.getElementById("login-erro").textContent = "";
+  voltarParaPassoSenha();
+});
+document.getElementById("atualizar-btn").addEventListener("click", () => carregarLista());
+
+async function carregarLista() {
+  const listaEl = document.getElementById("lista-clientes");
+  listaEl.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  try {
+    const resp = await chamarBackend("");
+    if (resp && resp.erro === "senha_incorreta") {
+      limparSenha();
+      limparVendedorEscolhido();
+      document.getElementById("app-screen").style.display = "none";
+      document.getElementById("login-screen").style.display = "flex";
+      voltarParaPassoSenha();
+      return;
+    }
+    estadoAtual = resp;
+    renderTudo();
+  } catch (e) {
+    listaEl.innerHTML = '<div class="estado-erro">Não consegui atualizar agora — confere sua internet e tenta de novo.</div>';
+  }
+}
+
+function renderTudo() {
+  if (!estadoAtual || estadoAtual.erro) {
+    document.getElementById("nome-vendedor").textContent = "Lista de Ação";
+    document.getElementById("gerado-em-label").textContent = "";
+    document.getElementById("resumo-topo").innerHTML = "";
+    document.getElementById("filtros").innerHTML = "";
+    document.getElementById("lista-clientes").innerHTML = '<div class="estado-erro">' + escapeHtml((estadoAtual && estadoAtual.mensagem) || "Sem dados.") + '</div>';
+    return;
+  }
+
+  document.getElementById("nome-vendedor").textContent = estadoAtual.vendedor;
+  document.getElementById("gerado-em-label").textContent = "carteira: " + estadoAtual.total_clientes_da_carteira + " cliente(s) · atualizado " + new Date(estadoAtual.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  document.getElementById("resumo-topo").innerHTML =
+    '<div class="resumo-chip"><b>' + estadoAtual.total_com_acao_sugerida + '</b>com ação sugerida</div>' +
+    '<div class="resumo-chip"><b>' + estadoAtual.lista.filter(c => !c.contatado_hoje).length + '</b>ainda por contatar hoje</div>';
+
+  const contagemPorTipo = {};
+  estadoAtual.lista.forEach(c => c.sinais.forEach(s => { contagemPorTipo[s.tipo] = (contagemPorTipo[s.tipo] || 0) + 1; }));
+  const chipsHtml = Object.keys(LABELS_SINAL).filter(t => contagemPorTipo[t]).map(t =>
+    '<div class="filtro-chip' + (filtroSinalAtivo === t ? ' ativo' : '') + '" data-tipo="' + t + '">' + LABELS_SINAL[t] + ' (' + contagemPorTipo[t] + ')</div>'
+  ).join("");
+  document.getElementById("filtros").innerHTML =
+    '<div class="filtro-chip' + (filtroSinalAtivo === null ? ' ativo' : '') + '" data-tipo="">Todos</div>' +
+    chipsHtml +
+    '<label class="filtro-toggle"><input type="checkbox" id="toggle-ocultar" ' + (ocultarContatados ? "checked" : "") + '> ocultar contatados hoje</label>';
+
+  document.querySelectorAll(".filtro-chip").forEach(el => {
+    el.addEventListener("click", () => {
+      filtroSinalAtivo = el.getAttribute("data-tipo") || null;
+      renderTudo();
+    });
+  });
+  document.getElementById("toggle-ocultar").addEventListener("change", (ev) => {
+    ocultarContatados = ev.target.checked;
+    renderListaFiltrada();
+  });
+
+  renderListaFiltrada();
+}
+
+function renderListaFiltrada() {
+  const listaEl = document.getElementById("lista-clientes");
+  let itens = estadoAtual.lista.slice();
+  if (filtroSinalAtivo) itens = itens.filter(c => c.sinais.some(s => s.tipo === filtroSinalAtivo));
+  if (ocultarContatados) itens = itens.filter(c => !c.contatado_hoje);
+
+  if (itens.length === 0) {
+    listaEl.innerHTML = '<div class="estado-vazio">Nenhum cliente nessa visão agora. ' + (ocultarContatados ? "Talvez já tenha contatado todo mundo hoje — desmarca \"ocultar contatados\" pra conferir." : "") + '</div>';
+    return;
+  }
+
+  listaEl.innerHTML = itens.map(c => cardClienteHtml(c)).join("");
+
+  itens.forEach(c => {
+    const idSeguro = c.cnpj.replace(/[^0-9]/g, "");
+    const btn = document.getElementById("btn-contatar-" + idSeguro);
+    if (btn) btn.addEventListener("click", () => marcarContatado(c.cnpj));
+  });
+}
+
+function cardClienteHtml(c) {
+  const badgesHtml = c.sinais.map(s => '<span class="badge ' + s.tipo + '">' + LABELS_SINAL[s.tipo] + (s.tipo === "cross_sell" && s.sku_sugerido ? ": " + escapeHtml(s.sku_sugerido) : "") + '</span>').join("");
+  const contatoHtml = c.ultimo_contato
+    ? '<div class="contato-info">✓ contatado em ' + formatDataCurta(c.ultimo_contato.data) + (c.ultimo_contato.nota ? " — " + escapeHtml(c.ultimo_contato.nota) : "") + '</div>'
+    : "";
+  const idSeguro = c.cnpj.replace(/[^0-9]/g, "");
+  return '<div class="cliente-card' + (c.contatado_hoje ? " contatado" : "") + '">' +
+    '<div class="cliente-topo">' +
+      '<div><div class="cliente-nome">' + escapeHtml(c.nome) + '</div><div class="cliente-cnpj">' + escapeHtml(c.cnpj) + '</div></div>' +
+      '<div class="cliente-receita">' + formatCompactBRL(c.receita_historica_total) + '<div class="lbl">histórico total</div></div>' +
+    '</div>' +
+    '<div class="badges">' + badgesHtml + '</div>' +
+    '<div class="cliente-stats">' +
+      '<span>Última compra:</span> ' + formatDataCurta(c.ultima_compra_data) + ' (' + formatCompactBRL(c.ultima_compra_valor) + ') · ' +
+      '<span>Ticket médio:</span> ' + formatCompactBRL(c.ticket_medio) + ' · ' +
+      '<span>Total de compras:</span> ' + c.total_compras_historico +
+    '</div>' +
+    contatoHtml +
+    '<div class="acao-linha">' +
+      '<input type="text" id="nota-' + idSeguro + '" placeholder="Nota rápida (opcional)" maxlength="300">' +
+      '<button class="btn-contatar" id="btn-contatar-' + idSeguro + '">' + (c.contatado_hoje ? "Contatado ✓" : "Marcar contatado") + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+async function marcarContatado(cnpj) {
+  const idSeguro = cnpj.replace(/[^0-9]/g, "");
+  const notaInput = document.getElementById("nota-" + idSeguro);
+  const nota = notaInput ? notaInput.value : "";
+  const btn = document.getElementById("btn-contatar-" + idSeguro);
+  if (btn) { btn.disabled = true; btn.textContent = "Salvando…"; }
+  try {
+    await chamarBackend("&marcar_contatado=1&cnpj=" + encodeURIComponent(cnpj) + "&nota=" + encodeURIComponent(nota));
+    // atualiza estado local sem esperar novo carregamento completo
+    const item = estadoAtual.lista.find(c => c.cnpj === cnpj);
+    if (item) {
+      item.contatado_hoje = true;
+      item.ultimo_contato = { data: new Date().toISOString().slice(0, 10), nota: nota };
+    }
+    renderListaFiltrada();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Tenta de novo"; }
+  }
+}
+
+// se já tem senha E vendedor escolhido de visita anterior, entra direto
+if (senhaSalva() && vendedorSalvo()) confirmarVendedorEEntrar(vendedorSalvo(), true);
+</script>
+</body>
+</html>
