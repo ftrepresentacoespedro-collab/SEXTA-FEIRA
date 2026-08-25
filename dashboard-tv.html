@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEXTA FEIRA — Central de Vendas</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #232322;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --hairline:    #2c2c2a;
+    --baseline:    #383835;
+    --border:      rgba(255,255,255,0.10);
+
+    --blue:    #3987e5;
+    --blue-track: rgba(57,135,229,0.18);
+    --orange:  #d95926;
+    --aqua:    #199e70;
+    --yellow:  #c98500;
+    --magenta: #d55181;
+    --green:   #008300;
+    --violet:  #9085e9;
+    --red:     #e66767;
+
+    --good:     #0ca30c;
+    --warning:  #fab219;
+    --serious:  #ec835a;
+    --critical: #d03b3b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px 28px 16px;
+    gap: 16px;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .titulo { display: flex; align-items: baseline; gap: 14px; }
+  .titulo h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: 0.3px; }
+  .titulo .sub { color: var(--text-muted); font-size: 14px; }
+
+  .status-ao-vivo { display: flex; align-items: center; gap: 22px; }
+  .pulso-wrap { display: flex; align-items: center; gap: 8px; }
+  .pulso {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 0 0 rgba(12,163,12,0.6);
+    animation: pulso 2s infinite;
+  }
+  .pulso.erro { background: var(--critical); box-shadow: none; animation: none; }
+  @keyframes pulso {
+    0%   { box-shadow: 0 0 0 0 rgba(12,163,12,0.55); }
+    70%  { box-shadow: 0 0 0 9px rgba(12,163,12,0); }
+    100% { box-shadow: 0 0 0 0 rgba(12,163,12,0); }
+  }
+  .status-ao-vivo .label { font-size: 13px; color: var(--text-secondary); }
+  .relogio { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .relogio .data { font-size: 13px; color: var(--text-muted); font-weight: 400; display: block; text-align: right; }
+
+  /* ---------- layout ---------- */
+  main.grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .card h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card h2 .fonte-tag {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .aviso-inline {
+    font-size: 12px;
+    color: var(--warning);
+    background: rgba(250,178,25,0.08);
+    border: 1px solid rgba(250,178,25,0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  .erro-inline {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 20px 0;
+  }
+
+  /* ---------- hero / meta ---------- */
+  .hero-valor {
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+  }
+  .hero-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .meter-track {
+    width: 100%;
+    height: 14px;
+    border-radius: 7px;
+    background: var(--blue-track);
+    margin-top: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 7px;
+    background: var(--blue);
+    transition: width 900ms cubic-bezier(.2,.7,.3,1), background-color 400ms;
+  }
+  .meter-fill.completa { background: var(--good); }
+  .meter-legenda { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .stat-tile {
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat-tile .valor { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-tile .label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .stat-tile .delta { font-size: 11px; margin-top: 3px; font-weight: 600; }
+  .delta.good { color: var(--good); }
+  .delta.critical { color: var(--critical); }
+
+  /* ---------- barras entrada por dia ---------- */
+  .barras-dias {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 92px;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .barra-dia-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .barra-dia-valor { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .barra-dia {
+    width: 100%;
+    max-width: 24px;
+    background: var(--blue);
+    border-radius: 4px 4px 2px 2px;
+    transition: height 700ms cubic-bezier(.2,.7,.3,1);
+  }
+  .barra-dia-label { font-size: 10px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; }
+
+  /* ---------- rankings ---------- */
+  .ranking-secao { margin-top: 4px; }
+  .ranking-secao + .ranking-secao { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hairline); }
+  .ranking-titulo { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+  .ranking-lista { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .ranking-linha { display: flex; align-items: center; gap: 10px; }
+  .ranking-rank { width: 16px; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .ranking-corpo { flex: 1; min-width: 0; }
+  .ranking-nome-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ranking-nome { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ranking-margem { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .ranking-meter-track { height: 6px; border-radius: 3px; background: var(--blue-track); margin-top: 4px; overflow: hidden; }
+  .ranking-meter-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 800ms cubic-bezier(.2,.7,.3,1); }
+  .ranking-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .backfill-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 5px 8px;
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  .backfill-badge b { color: var(--text-secondary); }
+
+  /* ---------- footer ---------- */
+  footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="titulo">
+      <h1>SEXTA FEIRA — Central de Vendas</h1>
+      <span class="sub">Vitanuts / Big Mondo Brands</span>
+    </div>
+    <div class="status-ao-vivo">
+      <div class="pulso-wrap">
+        <div class="pulso" id="pulso"></div>
+        <span class="label" id="status-label">conectando…</span>
+      </div>
+      <div class="relogio">
+        <span id="relogio-hora">--:--:--</span>
+        <span class="data" id="relogio-data">—</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card" id="card-painel">
+      <h2>Painel de Vendas <span class="fonte-tag" id="painel-gerado-em"></span></h2>
+      <div id="painel-corpo"><div class="erro-inline">Carregando…</div></div>
+    </section>
+
+    <section class="card" id="card-detail">
+      <h2>DETAIL — Entrada de Pedidos <span class="fonte-tag" id="detail-gerado-em"></span></h2>
+      <div id="detail-corpo"><div class="erro-inline">Carregando…</div></div>
+    </section>
+
+    <section class="card" id="card-margem">
+      <h2>Margem por Vendedor / Plataforma <span class="fonte-tag">janela 30 dias</span></h2>
+      <div id="margem-corpo"><div class="erro-inline">Carregando…</div></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Painel de Vendas, DETAIL e Margem usam regras de cálculo próprias — números não são somáveis entre si.</span>
+    <span id="ultima-atualizacao">—</span>
+  </footer>
+</div>
+
+<script>
+// =========================== CONFIGURAÇÃO — AJUSTAR ANTES DE PUBLICAR ===========================
+// Mesma URL do web app já usada em sexta-feira.html.
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxLl3nfcU-Cd-Sgr76uZzGQ4SWvEZunqhCJLCWCLLXFgJqX1DMStdAJBBl3jn05BJ4A/exec";
+// TROQUE por uma senha própria dessa tela (diferente da senha do chat) —
+// e cadastre o MESMO valor como propriedade DASHBOARD_TV_SENHA no
+// Apps Script (Configurações do projeto > Propriedades do script).
+// Como esse arquivo fica num repositório público, essa senha NÃO é
+// segredo de verdade (qualquer um vê via Ctrl+U) — é só uma barreira
+// simples e isolada, pra separar o acesso dessa TV do acesso ao chat
+// completo. Ver comentário "DASHBOARD TV" no topo do Code_IA.gs.
+const SENHA_TV = "852852";
+
+const INTERVALO_POLLING_MS = 60 * 1000; // não adianta ser mais curto que isso: o dado em si só muda a cada ciclo do gatilho (15 min)
+const TIMEOUT_REQUISICAO_MS = 20 * 1000;
+// =====================================================================================
+
+let ultimoSucesso = null; // timestamp local do último poll ok
+let estadoAnterior = null; // último payload recebido, pra animar só o que mudou
+
+function chamarBackend() {
+  return new Promise((resolve, reject) => {
+    const callbackName = "tvCb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    const script = document.createElement("script");
+    let concluido = false;
+
+    const limpar = () => {
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (concluido) return;
+      concluido = true;
+      limpar();
+      reject(new Error("tempo_esgotado"));
+    }, TIMEOUT_REQUISICAO_MS);
+
+    window[callbackName] = (data) => {
+      if (concluido) return;
+      concluido = true;
+      clearTimeout(timeoutId);
+      limpar();
+      resolve(data);
+    };
+
+    const query = "painel_tv=1&senha_tv=" + encodeURIComponent(SENHA_TV) + "&callback=" + callbackName;
+    script.src = WEBAPP_URL + "?" + query;
+    script.onerror = () => {
+      if (concluido) return;
+      concluido = true;
+      clearTimeout(timeoutId);
+      limpar();
+      reject(new Error("falha_de_rede"));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+// ---------- formatação ----------
+function formatCompactBRL(valor) {
+  if (valor === null || valor === undefined || isNaN(valor)) return "—";
+  const abs = Math.abs(valor);
+  const sinal = valor < 0 ? "-" : "";
+  if (abs >= 1000000) return sinal + "R$ " + (abs / 1000000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+  if (abs >= 1000) return sinal + "R$ " + (abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mil";
+  return sinal + "R$ " + abs.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function formatPct(v) {
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+}
+function formatInt(v) {
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  return Math.round(v).toLocaleString("pt-BR");
+}
+function formatHoraCurta(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) { return ""; }
+}
+function nomeDiaCurto(dataStr) {
+  if (!dataStr) return "";
+  try {
+    const [y, m, d] = dataStr.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+  } catch (e) { return ""; }
+}
+
+// ---------- animação de número ----------
+function animarNumero(el, deValor, paraValor, formatterFn, duracaoMs) {
+  duracaoMs = duracaoMs || 800;
+  if (deValor === null || deValor === undefined || isNaN(deValor)) {
+    el.textContent = formatterFn(paraValor);
+    return;
+  }
+  if (deValor === paraValor) {
+    el.textContent = formatterFn(paraValor);
+    return;
+  }
+  const inicio = performance.now();
+  function passo(agora) {
+    const t = Math.min(1, (agora - inicio) / duracaoMs);
+    const easeOut = 1 - Math.pow(1 - t, 3);
+    const atual = deValor + (paraValor - deValor) * easeOut;
+    el.textContent = formatterFn(atual);
+    if (t < 1) requestAnimationFrame(passo);
+    else el.textContent = formatterFn(paraValor);
+  }
+  requestAnimationFrame(passo);
+}
+
+// ---------- render: Painel de Vendas ----------
+function renderPainel(painel, painelAnterior) {
+  const corpo = document.getElementById("painel-corpo");
+  document.getElementById("painel-gerado-em").textContent = painel && painel.gerado_em ? "sincronizado " + formatHoraCurta(painel.gerado_em) : "";
+
+  if (!painel || painel.erro) {
+    corpo.innerHTML = '<div class="erro-inline">' + ((painel && painel.mensagem) || "Painel de Vendas indisponível agora.") + '</div>';
+    return;
+  }
+
+  if (!corpo.querySelector(".hero-valor")) {
+    corpo.innerHTML =
+      '<div class="hero-valor" id="p-faturamento">R$ 0</div>' +
+      '<div class="hero-label">Faturamento do mês · meta ' + formatCompactBRL(painel.meta_mes) + '</div>' +
+      '<div class="meter-track"><div class="meter-fill" id="p-meter"></div></div>' +
+      '<div class="meter-legenda"><span id="p-pct">0%</span><span>da meta</span></div>' +
+      '<div class="stat-grid">' +
+        '<div class="stat-tile"><div class="valor" id="p-carteira">—</div><div class="label">Carteira em aberto</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-hoje">—</div><div class="label">Faturado hoje</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-clientes">—</div><div class="label">Clientes positivados</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-tendencia">—</div><div class="label">Tendência de fechamento</div></div>' +
+      '</div>' +
+      '<div id="p-avisos"></div>';
+  }
+
+  const faturamentoAnterior = painelAnterior ? painelAnterior.faturamento_real : null;
+  animarNumero(document.getElementById("p-faturamento"), faturamentoAnterior, painel.faturamento_real, formatCompactBRL, 900);
+
+  const pct = Math.max(0, Math.min(100, painel.percentual_da_meta || 0));
+  const meterEl = document.getElementById("p-meter");
+  meterEl.style.width = pct + "%";
+  meterEl.classList.toggle("completa", pct >= 100);
+  document.getElementById("p-pct").textContent = formatPct(painel.percentual_da_meta);
+
+  document.getElementById("p-carteira").textContent = formatCompactBRL(painel.carteira_em_aberto_valor);
+  document.getElementById("p-hoje").textContent = formatCompactBRL(painel.faturamento_hoje);
+  document.getElementById("p-clientes").textContent = formatInt(painel.clientes_positivados_total);
+  document.getElementById("p-tendencia").textContent = formatCompactBRL(painel.tendencia_fechamento);
+
+  const avisosEl = document.getElementById("p-avisos");
+  avisosEl.innerHTML = (painel.avisos || []).map(a => '<div class="aviso-inline">' + escapeHtml(a) + '</div>').join("");
+}
+
+// ---------- render: DETAIL ----------
+function renderDetail(detail) {
+  const corpo = document.getElementById("detail-corpo");
+  document.getElementById("detail-gerado-em").textContent = detail && detail.gerado_em ? "sincronizado " + formatHoraCurta(detail.gerado_em) : "";
+
+  if (!detail || detail.erro) {
+    corpo.innerHTML = '<div class="erro-inline">' + ((detail && detail.mensagem) || "DETAIL indisponível agora.") + '</div>';
+    return;
+  }
+
+  const dias = ((detail.entrada_pedidos_mes && detail.entrada_pedidos_mes.ultimos_dias) || []).slice().reverse(); // volta pra ordem cronológica (mais antigo -> mais recente) pro gráfico
+  const maxQtd = Math.max(1, ...dias.map(d => (d.B2B ? d.B2B.qtd : 0) + (d.B2C ? d.B2C.qtd : 0)));
+
+  const barrasHtml = dias.map(d => {
+    const qtd = (d.B2B ? d.B2B.qtd : 0) + (d.B2C ? d.B2C.qtd : 0);
+    const alturaPct = Math.max(4, Math.round((qtd / maxQtd) * 100));
+    return '<div class="barra-dia-col">' +
+      '<div class="barra-dia-valor">' + qtd + '</div>' +
+      '<div class="barra-dia" style="height:' + alturaPct + '%"></div>' +
+      '<div class="barra-dia-label">' + escapeHtml(nomeDiaCurto(d.data)) + '</div>' +
+      '</div>';
+  }).join("");
+
+  const plataformas = (detail.faturado_por_plataforma_b2c || []).slice(0, 4);
+  const maxPlat = Math.max(1, ...plataformas.map(p => p.faturado_valor || 0));
+  const plataformasHtml = plataformas.map((p, i) => {
+    const pct = Math.max(4, Math.round(((p.faturado_valor || 0) / maxPlat) * 100));
+    return '<div class="ranking-linha">' +
+      '<div class="ranking-rank">' + (i + 1) + '</div>' +
+      '<div class="ranking-corpo">' +
+        '<div class="ranking-nome-linha"><span class="ranking-nome">' + escapeHtml(p.plataforma || "—") + '</span><span class="ranking-margem">' + formatCompactBRL(p.faturado_valor) + '</span></div>' +
+        '<div class="ranking-meter-track"><div class="ranking-meter-fill" style="width:' + pct + '%"></div></div>' +
+      '</div></div>';
+  }).join("");
+
+  const totalMes = detail.entrada_pedidos_mes && detail.entrada_pedidos_mes.total;
+  const avisos = (detail.avisos || []).map(a => '<div class="aviso-inline">' + escapeHtml(a) + '</div>').join("");
+
+  corpo.innerHTML =
+    '<div class="hero-label">Entrada de pedidos — últimos ' + dias.length + ' dias</div>' +
+    '<div class="barras-dias">' + (barrasHtml || '<div class="erro-inline">Sem dados de entrada ainda.</div>') + '</div>' +
+    '<div class="stat-grid" style="margin-top:14px">' +
+      '<div class="stat-tile"><div class="valor">' + formatInt(totalMes && totalMes.qtd) + '</div><div class="label">Pedidos no mês</div></div>' +
+      '<div class="stat-tile"><div class="valor">' + formatCompactBRL(totalMes && totalMes.valor) + '</div><div class="label">Valor no mês</div></div>' +
+    '</div>' +
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Faturado por plataforma (B2C)</div>' +
+      '<div class="ranking-lista">' + (plataformasHtml || '<div class="erro-inline">Sem dados ainda.</div>') + '</div>' +
+    '</div>' +
+    avisos;
+}
+
+// ---------- render: Margem ----------
+function renderMargem(margem) {
+  const corpo = document.getElementById("margem-corpo");
+
+  if (!margem || margem.calculado === false) {
+    corpo.innerHTML = '<div class="erro-inline">' + ((margem && margem.mensagem) || "Margem indisponível agora.") + '</div>';
+    return;
+  }
+
+  function linhaRanking(item, nome, i, max) {
+    const margemValor = item.margem_valor || 0;
+    const pct = max > 0 ? Math.max(4, Math.round((Math.max(0, margemValor) / max) * 100)) : 4;
+    const corMargem = margemValor >= 0 ? "" : 'style="color:var(--critical)"';
+    return '<div class="ranking-linha">' +
+      '<div class="ranking-rank">' + (i + 1) + '</div>' +
+      '<div class="ranking-corpo">' +
+        '<div class="ranking-nome-linha"><span class="ranking-nome">' + escapeHtml(nome) + '</span><span class="ranking-margem" ' + corMargem + '>' + formatCompactBRL(margemValor) + '</span></div>' +
+        '<div class="ranking-meter-track"><div class="ranking-meter-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="ranking-sub">margem ' + formatPct(item.margem_pct) + ' · receita ' + formatCompactBRL(item.receita) + (item.notas_excluidas_granel ? ' · ' + item.notas_excluidas_granel + ' nota(s) sem custo excluída(s)' : '') + '</div>' +
+      '</div></div>';
+  }
+
+  const vendedores = margem.ranking_vendedores_b2b || [];
+  const plataformas = margem.ranking_plataformas_b2c || [];
+  const maxVend = Math.max(0, ...vendedores.map(v => v.margem_valor || 0));
+  const maxPlat = Math.max(0, ...plataformas.map(p => p.margem_valor || 0));
+
+  const vendedoresHtml = vendedores.map((v, i) => linhaRanking(v, v.vendedor, i, maxVend)).join("");
+  const plataformasHtml = plataformas.map((p, i) => linhaRanking(p, p.plataforma, i, maxPlat)).join("");
+
+  corpo.innerHTML =
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Top vendedores (B2B)</div>' +
+      '<div class="ranking-lista">' + (vendedoresHtml || '<div class="erro-inline">Sem vendedor identificado na janela ainda.</div>') + '</div>' +
+    '</div>' +
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Top plataformas (B2C)</div>' +
+      '<div class="ranking-lista">' + (plataformasHtml || '<div class="erro-inline">Sem dados ainda.</div>') + '</div>' +
+    '</div>' +
+    (margem.aviso_backfill_incompleto
+      ? '<div class="backfill-badge">Histórico de vendedor: <b>' + formatPct(margem.backfill_percentual_completo) + '</b> processado — ranking de vendedores pode subir conforme o backfill avança.</div>'
+      : '');
+}
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ---------- polling ----------
+async function atualizar() {
+  try {
+    const dados = await chamarBackend();
+    if (dados && dados.erro === "senha_tv_incorreta") {
+      marcarStatus(false, "senha da TV incorreta — confira DASHBOARD_TV_SENHA no Apps Script");
+      return;
+    }
+    renderPainel(dados.painel, estadoAnterior ? estadoAnterior.painel : null);
+    renderDetail(dados.detail);
+    renderMargem(dados.margem);
+    estadoAnterior = dados;
+    ultimoSucesso = Date.now();
+    marcarStatus(true, "ao vivo");
+  } catch (e) {
+    marcarStatus(false, "sem conexão — tentando de novo");
+  }
+}
+
+function marcarStatus(ok, texto) {
+  document.getElementById("pulso").classList.toggle("erro", !ok);
+  document.getElementById("status-label").textContent = texto;
+}
+
+function atualizarRodape() {
+  const el = document.getElementById("ultima-atualizacao");
+  if (!ultimoSucesso) { el.textContent = "aguardando primeira atualização…"; return; }
+  const segs = Math.round((Date.now() - ultimoSucesso) / 1000);
+  el.textContent = segs < 5 ? "atualizado agora" : "atualizado há " + segs + "s";
+}
+
+// ---------- relógio ----------
+function atualizarRelogio() {
+  const agora = new Date();
+  document.getElementById("relogio-hora").textContent = agora.toLocaleTimeString("pt-BR");
+  document.getElementById("relogio-data").textContent = agora.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+}
+
+// ---------- reload diário (TV fica ligada 24/7 — evita acúmulo de memória no navegador) ----------
+function agendarReloadDiario() {
+  const agora = new Date();
+  const proximo = new Date(agora);
+  proximo.setHours(4, 30, 0, 0);
+  if (proximo <= agora) proximo.setDate(proximo.getDate() + 1);
+  setTimeout(() => location.reload(), proximo.getTime() - agora.getTime());
+}
+
+atualizarRelogio();
+setInterval(atualizarRelogio, 1000);
+setInterval(atualizarRodape, 1000);
+agendarReloadDiario();
+
+atualizar();
+setInterval(atualizar, INTERVALO_POLLING_MS);
+</script>
+</body>
+</html>
