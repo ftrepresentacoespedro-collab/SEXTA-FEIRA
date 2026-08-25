@@ -119,6 +119,16 @@
     color: var(--text-muted);
     font-weight: 400;
   }
+  /* corpo de cada card é a região flexível/rolável dentro da altura fixa
+     do card — evita que conteúdo extra fique cortado sem aviso (o card
+     em si tem overflow:hidden só pelas bordas arredondadas) */
+  .card-corpo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
 
   .aviso-inline {
     font-size: 12px;
@@ -179,6 +189,7 @@
   .stat-tile .delta { font-size: 11px; margin-top: 3px; font-weight: 600; }
   .delta.good { color: var(--good); }
   .delta.critical { color: var(--critical); }
+  .stat-tile .sub-info { font-size: 11px; margin-top: 3px; color: var(--text-muted); font-weight: 400; }
 
   /* ---------- barras entrada por dia ---------- */
   .barras-dias {
@@ -270,17 +281,17 @@
   <main class="grid">
     <section class="card" id="card-painel">
       <h2>Painel de Vendas <span class="fonte-tag" id="painel-gerado-em"></span></h2>
-      <div id="painel-corpo"><div class="erro-inline">Carregando…</div></div>
+      <div id="painel-corpo" class="card-corpo"><div class="erro-inline">Carregando…</div></div>
     </section>
 
     <section class="card" id="card-detail">
       <h2>DETAIL — Entrada de Pedidos <span class="fonte-tag" id="detail-gerado-em"></span></h2>
-      <div id="detail-corpo"><div class="erro-inline">Carregando…</div></div>
+      <div id="detail-corpo" class="card-corpo"><div class="erro-inline">Carregando…</div></div>
     </section>
 
     <section class="card" id="card-margem">
       <h2>Margem por Vendedor / Plataforma <span class="fonte-tag">janela 30 dias</span></h2>
-      <div id="margem-corpo"><div class="erro-inline">Carregando…</div></div>
+      <div id="margem-corpo" class="card-corpo"><div class="erro-inline">Carregando…</div></div>
     </section>
   </main>
 
@@ -301,7 +312,7 @@ const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxLl3nfcU-Cd-Sgr76uZ
 // segredo de verdade (qualquer um vê via Ctrl+U) — é só uma barreira
 // simples e isolada, pra separar o acesso dessa TV do acesso ao chat
 // completo. Ver comentário "DASHBOARD TV" no topo do Code_IA.gs.
-const SENHA_TV = "852852";
+const SENHA_TV = "TROQUE_ESSA_SENHA_AQUI";
 
 const INTERVALO_POLLING_MS = 60 * 1000; // não adianta ser mais curto que isso: o dado em si só muda a cada ciclo do gatilho (15 min)
 const TIMEOUT_REQUISICAO_MS = 20 * 1000;
@@ -381,6 +392,21 @@ function nomeDiaCurto(dataStr) {
     return dt.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
   } catch (e) { return ""; }
 }
+// Derivado no cliente a partir de periodo_fim (já vem do Painel de
+// Vendas) — não é um dado novo inventado, só a diferença de dias entre
+// hoje e uma data que a própria API já manda.
+function diasRestantesNoPeriodo(periodoFimStr) {
+  if (!periodoFimStr) return null;
+  try {
+    const [y, m, d] = periodoFimStr.slice(0, 10).split("-").map(Number);
+    const fim = new Date(y, m - 1, d);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    fim.setHours(0, 0, 0, 0);
+    const dias = Math.round((fim - hoje) / (24 * 60 * 60 * 1000));
+    return dias >= 0 ? dias : null;
+  } catch (e) { return null; }
+}
 
 // ---------- animação de número ----------
 function animarNumero(el, deValor, paraValor, formatterFn, duracaoMs) {
@@ -416,17 +442,25 @@ function renderPainel(painel, painelAnterior) {
   }
 
   if (!corpo.querySelector(".hero-valor")) {
+    const dias = diasRestantesNoPeriodo(painel.periodo_fim);
     corpo.innerHTML =
       '<div class="hero-valor" id="p-faturamento">R$ 0</div>' +
       '<div class="hero-label">Faturamento do mês · meta ' + formatCompactBRL(painel.meta_mes) + '</div>' +
       '<div class="meter-track"><div class="meter-fill" id="p-meter"></div></div>' +
       '<div class="meter-legenda"><span id="p-pct">0%</span><span>da meta</span></div>' +
       '<div class="stat-grid">' +
-        '<div class="stat-tile"><div class="valor" id="p-carteira">—</div><div class="label">Carteira em aberto</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-carteira">—</div><div class="label">Carteira em aberto</div><div class="sub-info" id="p-carteira-sub"></div></div>' +
         '<div class="stat-tile"><div class="valor" id="p-hoje">—</div><div class="label">Faturado hoje</div></div>' +
-        '<div class="stat-tile"><div class="valor" id="p-clientes">—</div><div class="label">Clientes positivados</div></div>' +
-        '<div class="stat-tile"><div class="valor" id="p-tendencia">—</div><div class="label">Tendência de fechamento</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-ontem">—</div><div class="label">Faturado ontem</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-gap">—</div><div class="label">Falta pra meta</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-clientes">—</div><div class="label">Clientes positivados</div><div class="sub-info" id="p-clientes-sub"></div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-tendencia">—</div><div class="label">Tendência de fechamento</div><div class="sub-info" id="p-tendencia-sub"></div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-projecao">—</div><div class="label">Real + carteira</div></div>' +
+        '<div class="stat-tile"><div class="valor" id="p-dias">' + (dias !== null ? dias : "—") + '</div><div class="label">Dias restantes no mês</div></div>' +
       '</div>' +
+      '<div id="p-dias-chart"></div>' +
+      '<div id="p-produtos"></div>' +
+      '<div id="p-grupo"></div>' +
       '<div id="p-avisos"></div>';
   }
 
@@ -440,9 +474,72 @@ function renderPainel(painel, painelAnterior) {
   document.getElementById("p-pct").textContent = formatPct(painel.percentual_da_meta);
 
   document.getElementById("p-carteira").textContent = formatCompactBRL(painel.carteira_em_aberto_valor);
+  document.getElementById("p-carteira-sub").textContent = formatInt(painel.carteira_em_aberto_pedidos) + " pedido(s)";
   document.getElementById("p-hoje").textContent = formatCompactBRL(painel.faturamento_hoje);
+  document.getElementById("p-ontem").textContent = formatCompactBRL(painel.faturamento_ontem);
+  document.getElementById("p-gap").textContent = formatCompactBRL(painel.gap_ate_meta);
   document.getElementById("p-clientes").textContent = formatInt(painel.clientes_positivados_total);
+  document.getElementById("p-clientes-sub").textContent = "B2C " + formatInt(painel.clientes_positivados_b2c) + " · B2B " + formatInt(painel.clientes_positivados_b2b);
   document.getElementById("p-tendencia").textContent = formatCompactBRL(painel.tendencia_fechamento);
+  document.getElementById("p-tendencia-sub").textContent = "B2C " + formatCompactBRL(painel.tendencia_b2c) + " · B2B " + formatCompactBRL(painel.tendencia_b2b);
+  document.getElementById("p-projecao").textContent = formatCompactBRL(painel.real_mais_carteira);
+
+  // Faturamento por dia — mesmo componente de barras usado no DETAIL.
+  const diasFat = painel.faturamento_ultimos_dias || [];
+  const maxFat = Math.max(1, ...diasFat.map(d => d.total || 0));
+  const barrasFatHtml = diasFat.map(d => {
+    const alturaPct = Math.max(4, Math.round(((d.total || 0) / maxFat) * 100));
+    return '<div class="barra-dia-col">' +
+      '<div class="barra-dia-valor">' + formatCompactBRL(d.total) + '</div>' +
+      '<div class="barra-dia" style="height:' + alturaPct + '%"></div>' +
+      '<div class="barra-dia-label">' + escapeHtml(nomeDiaCurto(d.data)) + '</div>' +
+      '</div>';
+  }).join("");
+  document.getElementById("p-dias-chart").innerHTML =
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Faturamento por dia — últimos ' + diasFat.length + ' dias</div>' +
+      '<div class="barras-dias">' + (barrasFatHtml || '<div class="erro-inline">Sem dados diários ainda.</div>') + '</div>' +
+    '</div>';
+
+  // Top 5 produtos do mês por faturamento real.
+  const produtos = painel.ranking_produtos_top5 || [];
+  const maxProduto = Math.max(1, ...produtos.map(p => p.valor || 0));
+  const produtosHtml = produtos.map((p, i) => {
+    const pct = Math.max(4, Math.round(((p.valor || 0) / maxProduto) * 100));
+    return '<div class="ranking-linha">' +
+      '<div class="ranking-rank">' + (i + 1) + '</div>' +
+      '<div class="ranking-corpo">' +
+        '<div class="ranking-nome-linha"><span class="ranking-nome">' + escapeHtml(p.nome || "—") + '</span><span class="ranking-margem">' + formatCompactBRL(p.valor) + '</span></div>' +
+        '<div class="ranking-meter-track"><div class="ranking-meter-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="ranking-sub">' + escapeHtml(p.sku || "") + ' · ' + formatInt(p.quantidade) + ' un · ' + escapeHtml(p.canal_predominante || "—") + '</div>' +
+      '</div></div>';
+  }).join("");
+  document.getElementById("p-produtos").innerHTML =
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Top produtos do mês (faturamento real)</div>' +
+      '<div class="ranking-lista">' + (produtosHtml || '<div class="erro-inline">Sem produto faturado ainda no mês.</div>') + '</div>' +
+    '</div>';
+
+  // Faturado real do mês, quebrado por grupo (B2C/B2B ou outra
+  // classificação que o Painel use) — diferente de tendencia_b2c/b2b
+  // acima (que é projeção), isso é o que já foi de fato faturado.
+  const grupos = painel.faturado_por_grupo || [];
+  const maxGrupo = Math.max(1, ...grupos.map(g => g.valor || 0));
+  const gruposHtml = grupos.map((g, i) => {
+    const pct = Math.max(4, Math.round(((g.valor || 0) / maxGrupo) * 100));
+    return '<div class="ranking-linha">' +
+      '<div class="ranking-rank">' + (i + 1) + '</div>' +
+      '<div class="ranking-corpo">' +
+        '<div class="ranking-nome-linha"><span class="ranking-nome">' + escapeHtml(g.grupo || "—") + '</span><span class="ranking-margem">' + formatCompactBRL(g.valor) + '</span></div>' +
+        '<div class="ranking-meter-track"><div class="ranking-meter-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="ranking-sub">' + formatInt(g.clientes) + ' cliente(s)</div>' +
+      '</div></div>';
+  }).join("");
+  document.getElementById("p-grupo").innerHTML =
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Faturado real do mês por grupo</div>' +
+      '<div class="ranking-lista">' + (gruposHtml || '<div class="erro-inline">Sem quebra por grupo ainda.</div>') + '</div>' +
+    '</div>';
 
   const avisosEl = document.getElementById("p-avisos");
   avisosEl.innerHTML = (painel.avisos || []).map(a => '<div class="aviso-inline">' + escapeHtml(a) + '</div>').join("");
@@ -483,7 +580,32 @@ function renderDetail(detail) {
       '</div></div>';
   }).join("");
 
+  // Entrada de pedidos por canal (mês) — Site/Amazon/Shopee/etc vêm
+  // prontos de entrada_pedidos_mes.por_plataforma (já existia na
+  // resposta, só não estava sendo mostrado). B2B entra como UMA linha
+  // agregada porque o DETAIL não quebra entrada de pedido por vendedor
+  // individual (só o faturado já emitido tem isso — ver ranking de
+  // vendedores no card de Margem ao lado); avisa isso explicitamente
+  // em vez de fingir que a lista está completa por vendedor.
+  const canais = (detail.entrada_pedidos_mes && detail.entrada_pedidos_mes.por_plataforma || []).slice().sort((a, b) => (b.qtd || 0) - (a.qtd || 0));
   const totalMes = detail.entrada_pedidos_mes && detail.entrada_pedidos_mes.total;
+  const linhasCanal = [];
+  if (totalMes && totalMes.B2B && totalMes.B2B.qtd > 0) {
+    linhasCanal.push({ nome: "B2B (todos os vendedores)", qtd: totalMes.B2B.qtd, valor: totalMes.B2B.valor });
+  }
+  canais.forEach(c => linhasCanal.push({ nome: c.plataforma, qtd: c.qtd, valor: c.valor }));
+  const maxCanalQtd = Math.max(1, ...linhasCanal.map(c => c.qtd || 0));
+  const canaisHtml = linhasCanal.slice(0, 6).map((c, i) => {
+    const pct = Math.max(4, Math.round(((c.qtd || 0) / maxCanalQtd) * 100));
+    return '<div class="ranking-linha">' +
+      '<div class="ranking-rank">' + (i + 1) + '</div>' +
+      '<div class="ranking-corpo">' +
+        '<div class="ranking-nome-linha"><span class="ranking-nome">' + escapeHtml(c.nome || "—") + '</span><span class="ranking-margem">' + formatInt(c.qtd) + ' ped.</span></div>' +
+        '<div class="ranking-meter-track"><div class="ranking-meter-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="ranking-sub">' + formatCompactBRL(c.valor) + '</div>' +
+      '</div></div>';
+  }).join("");
+
   const avisos = (detail.avisos || []).map(a => '<div class="aviso-inline">' + escapeHtml(a) + '</div>').join("");
 
   corpo.innerHTML =
@@ -492,6 +614,11 @@ function renderDetail(detail) {
     '<div class="stat-grid" style="margin-top:14px">' +
       '<div class="stat-tile"><div class="valor">' + formatInt(totalMes && totalMes.qtd) + '</div><div class="label">Pedidos no mês</div></div>' +
       '<div class="stat-tile"><div class="valor">' + formatCompactBRL(totalMes && totalMes.valor) + '</div><div class="label">Valor no mês</div></div>' +
+    '</div>' +
+    '<div class="ranking-secao">' +
+      '<div class="ranking-titulo">Entrada de pedidos por canal (mês)</div>' +
+      '<div class="ranking-lista">' + (canaisHtml || '<div class="erro-inline">Sem dados ainda.</div>') + '</div>' +
+      '<div class="ranking-sub" style="margin-top:6px;">* B2B não é quebrado por vendedor aqui — o DETAIL só tem esse detalhe pro faturado já emitido (ver Margem, ao lado).</div>' +
     '</div>' +
     '<div class="ranking-secao">' +
       '<div class="ranking-titulo">Faturado por plataforma (B2C)</div>' +
