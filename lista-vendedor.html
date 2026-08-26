@@ -5,45 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lista de Ação — SEXTA FEIRA</title>
 <style>
+  /* Tema escuro fixo, de propósito — mesma decisão já tomada no
+     dashboard-tv.html: sem depender do prefers-color-scheme do
+     dispositivo, porque em tela clara (fundo quase branco) a leitura
+     fica ruim e inconsistente entre aparelhos. */
   :root {
-    color-scheme: light;
-    --page:        #f9f9f7;
-    --surface:     #fcfcfb;
-    --surface-2:   #f1f0ec;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #232322;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
     --text-muted:     #898781;
-    --hairline:    #e1e0d9;
-    --border:      rgba(11,11,11,0.10);
-    --blue:    #2a78d6;
-    --blue-wash: rgba(42,120,214,0.10);
+    --hairline:    #2c2c2a;
+    --border:      rgba(255,255,255,0.10);
+    --blue:    #3987e5;
+    --blue-wash: rgba(57,135,229,0.16);
     --good:     #0ca30c;
-    --good-wash: rgba(12,163,12,0.10);
-    --warning:  #b06b00;
-    --warning-wash: rgba(250,178,25,0.14);
-    --critical: #c23434;
-    --critical-wash: rgba(208,59,59,0.10);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --page:        #0d0d0d;
-      --surface:     #1a1a19;
-      --surface-2:   #232322;
-      --text-primary:   #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted:     #898781;
-      --hairline:    #2c2c2a;
-      --border:      rgba(255,255,255,0.10);
-      --blue:    #3987e5;
-      --blue-wash: rgba(57,135,229,0.16);
-      --good:     #0ca30c;
-      --good-wash: rgba(12,163,12,0.16);
-      --warning:  #fab219;
-      --warning-wash: rgba(250,178,25,0.16);
-      --critical: #e66767;
-      --critical-wash: rgba(230,103,103,0.16);
-    }
+    --good-wash: rgba(12,163,12,0.16);
+    --warning:  #fab219;
+    --warning-wash: rgba(250,178,25,0.16);
+    --critical: #e66767;
+    --critical-wash: rgba(230,103,103,0.16);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -89,6 +72,16 @@
   .resumo-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; }
   .resumo-chip b { font-size: 15px; display: block; }
 
+  .busca-ordenar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .busca-ordenar input[type="text"] {
+    flex: 1; min-width: 160px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-primary); font-size: 13px;
+  }
+  .busca-ordenar select {
+    padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-primary); font-size: 13px;
+  }
+
   .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .filtro-chip {
     font-size: 12.5px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
@@ -103,6 +96,7 @@
   .cliente-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .cliente-nome { font-size: 14.5px; font-weight: 600; }
   .cliente-cnpj { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .cliente-responsavel { font-size: 11px; color: var(--blue); margin-top: 1px; }
   .cliente-receita { text-align: right; font-size: 13px; font-weight: 600; white-space: nowrap; }
   .cliente-receita .lbl { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
 
@@ -168,6 +162,15 @@
 
   <div class="resumo-topo" id="resumo-topo"></div>
 
+  <div class="busca-ordenar">
+    <input type="text" id="busca-input" placeholder="Buscar cliente pelo nome...">
+    <select id="ordenar-select">
+      <option value="padrao">Prioridade (padrão)</option>
+      <option value="maior">Maior histórico primeiro</option>
+      <option value="menor">Menor histórico primeiro</option>
+    </select>
+  </div>
+
   <div class="filtros" id="filtros"></div>
 
   <div id="lista-clientes"></div>
@@ -191,6 +194,12 @@ const LABELS_SINAL = {
 let estadoAtual = null; // último payload da lista
 let filtroSinalAtivo = null; // null = todos
 let ocultarContatados = true;
+let buscaNome = "";
+let ordenacaoReceita = "padrao"; // padrao | maior | menor
+
+function normalizarBusca_(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
 
 function senhaSalva() { return localStorage.getItem("lista_vendedor_senha") || ""; }
 function salvarSenha(s) { localStorage.setItem("lista_vendedor_senha", s); }
@@ -327,6 +336,14 @@ document.getElementById("sair-btn").addEventListener("click", () => {
   voltarParaPassoSenha();
 });
 document.getElementById("atualizar-btn").addEventListener("click", () => carregarLista());
+document.getElementById("busca-input").addEventListener("input", (ev) => {
+  buscaNome = ev.target.value;
+  renderListaFiltrada();
+});
+document.getElementById("ordenar-select").addEventListener("change", (ev) => {
+  ordenacaoReceita = ev.target.value;
+  renderListaFiltrada();
+});
 
 async function carregarLista() {
   const listaEl = document.getElementById("lista-clientes");
@@ -359,7 +376,7 @@ function renderTudo() {
   }
 
   document.getElementById("nome-vendedor").textContent = estadoAtual.vendedor;
-  document.getElementById("gerado-em-label").textContent = "carteira: " + estadoAtual.total_clientes_da_carteira + " cliente(s) · atualizado " + new Date(estadoAtual.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  document.getElementById("gerado-em-label").textContent = "carteira: " + estadoAtual.total_clientes_da_carteira + " cliente(s)" + (estadoAtual.modo_master ? " · visão master, todos os vendedores" : "") + " · atualizado " + new Date(estadoAtual.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   document.getElementById("resumo-topo").innerHTML =
     '<div class="resumo-chip"><b>' + estadoAtual.total_com_acao_sugerida + '</b>com ação sugerida</div>' +
@@ -394,9 +411,18 @@ function renderListaFiltrada() {
   let itens = estadoAtual.lista.slice();
   if (filtroSinalAtivo) itens = itens.filter(c => c.sinais.some(s => s.tipo === filtroSinalAtivo));
   if (ocultarContatados) itens = itens.filter(c => !c.contatado_hoje);
+  if (buscaNome.trim()) {
+    const termo = normalizarBusca_(buscaNome);
+    itens = itens.filter(c => normalizarBusca_(c.nome).includes(termo));
+  }
+  if (ordenacaoReceita === "maior") {
+    itens.sort((a, b) => b.receita_historica_total - a.receita_historica_total);
+  } else if (ordenacaoReceita === "menor") {
+    itens.sort((a, b) => a.receita_historica_total - b.receita_historica_total);
+  }
 
   if (itens.length === 0) {
-    listaEl.innerHTML = '<div class="estado-vazio">Nenhum cliente nessa visão agora. ' + (ocultarContatados ? "Talvez já tenha contatado todo mundo hoje — desmarca \"ocultar contatados\" pra conferir." : "") + '</div>';
+    listaEl.innerHTML = '<div class="estado-vazio">Nenhum cliente nessa visão agora. ' + (buscaNome.trim() ? "Confere se o nome digitado na busca está certo." : (ocultarContatados ? "Talvez já tenha contatado todo mundo hoje — desmarca \"ocultar contatados\" pra conferir." : "")) + '</div>';
     return;
   }
 
@@ -415,9 +441,10 @@ function cardClienteHtml(c) {
     ? '<div class="contato-info">✓ contatado em ' + formatDataCurta(c.ultimo_contato.data) + (c.ultimo_contato.nota ? " — " + escapeHtml(c.ultimo_contato.nota) : "") + '</div>'
     : "";
   const idSeguro = c.cnpj.replace(/[^0-9]/g, "");
+  const responsavelHtml = c.vendedor_responsavel ? '<div class="cliente-responsavel">Vendedor: ' + escapeHtml(c.vendedor_responsavel) + '</div>' : "";
   return '<div class="cliente-card' + (c.contatado_hoje ? " contatado" : "") + '">' +
     '<div class="cliente-topo">' +
-      '<div><div class="cliente-nome">' + escapeHtml(c.nome) + '</div><div class="cliente-cnpj">' + escapeHtml(c.cnpj) + '</div></div>' +
+      '<div><div class="cliente-nome">' + escapeHtml(c.nome) + '</div><div class="cliente-cnpj">' + escapeHtml(c.cnpj) + '</div>' + responsavelHtml + '</div>' +
       '<div class="cliente-receita">' + formatCompactBRL(c.receita_historica_total) + '<div class="lbl">histórico total</div></div>' +
     '</div>' +
     '<div class="badges">' + badgesHtml + '</div>' +
