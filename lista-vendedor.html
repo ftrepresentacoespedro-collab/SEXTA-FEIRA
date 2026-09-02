@@ -107,6 +107,23 @@
   .badge.queda_ritmo { background: var(--warning-wash); color: var(--warning); }
   .badge.cross_sell { background: var(--blue-wash); color: var(--blue); }
 
+  /* Classificação por recência (ATIVO/RECUPERAR/CONGELADO/ESQUECIDO,
+     adicionada 02/09/2026) — badge separado dos sinais de ação, cor
+     por severidade (mesma lógica de cor do resto da tela: bom=verde,
+     atenção=amber, crítico=vermelho; CONGELADO usa azul pra não
+     colidir visualmente com RECUPERAR). Sempre aparece, tenha sinal
+     de ação ou não — é rótulo da carteira inteira, não só de quem
+     precisa de ligação hoje. */
+  .badge-recencia { font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.2px; }
+  .badge-recencia.ATIVO { background: var(--good-wash); color: var(--good); }
+  .badge-recencia.RECUPERAR { background: var(--warning-wash); color: var(--warning); }
+  .badge-recencia.CONGELADO { background: var(--blue-wash); color: var(--blue); }
+  .badge-recencia.ESQUECIDO { background: var(--critical-wash); color: var(--critical); }
+
+  .filtros-secao { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .filtros-secao .filtros-linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .filtros-secao .filtros-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-right: 2px; }
+
   .cliente-stats { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
   .cliente-stats span { color: var(--text-muted); }
 
@@ -171,7 +188,7 @@
     </select>
   </div>
 
-  <div class="filtros" id="filtros"></div>
+  <div class="filtros-secao" id="filtros"></div>
 
   <div id="lista-clientes"></div>
 
@@ -191,9 +208,26 @@ const LABELS_SINAL = {
   cross_sell: "Cross-sell",
 };
 
+// Classificação por recência (ATIVO/RECUPERAR/CONGELADO/ESQUECIDO,
+// adicionada 02/09/2026 no backend — ver classificacao_recencia em
+// cada cliente). Ordem aqui é da mais urgente pra menos urgente, pra
+// os chips de filtro aparecerem nessa ordem.
+const LABELS_CLASSIFICACAO = { ESQUECIDO: "Esquecido", CONGELADO: "Congelado", RECUPERAR: "Recuperar", ATIVO: "Ativo" };
+
 let estadoAtual = null; // último payload da lista
 let filtroSinalAtivo = null; // null = todos
+let filtroClassificacaoAtivo = null; // null = todos — ver LABELS_CLASSIFICACAO
+let filtroVendedorAtivo = null; // null = todos — só é usado em modo_master (ver renderFiltroVendedor)
 let ocultarContatados = true;
+// Desde 02/09/2026 o backend devolve a carteira INTEIRA do vendedor,
+// não só quem tem sinal de ação (ver aviso_escopo do payload). Por
+// padrão a tela continua mostrando só quem tem ação sugerida — é o
+// uso diário de "quem eu ligo hoje" que já existia — mas agora dá pra
+// desligar esse filtro e ver a carteira inteira já classificada, pra
+// quem quiser a visão de CRM completa. Se achar que o padrão deveria
+// ser o oposto (carteira inteira aberta por padrão), é só trocar esse
+// valor inicial pra true.
+let somenteComAcao = true;
 let buscaNome = "";
 let ordenacaoReceita = "padrao"; // padrao | maior | menor
 
@@ -379,24 +413,84 @@ function renderTudo() {
   document.getElementById("gerado-em-label").textContent = "carteira: " + estadoAtual.total_clientes_da_carteira + " cliente(s)" + (estadoAtual.modo_master ? " · visão master, todos os vendedores" : "") + " · atualizado " + new Date(estadoAtual.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   document.getElementById("resumo-topo").innerHTML =
+    '<div class="resumo-chip"><b>' + estadoAtual.total_clientes_da_carteira + '</b>clientes na carteira</div>' +
     '<div class="resumo-chip"><b>' + estadoAtual.total_com_acao_sugerida + '</b>com ação sugerida</div>' +
     '<div class="resumo-chip"><b>' + estadoAtual.lista.filter(c => !c.contatado_hoje).length + '</b>ainda por contatar hoje</div>';
 
-  const contagemPorTipo = {};
-  estadoAtual.lista.forEach(c => c.sinais.forEach(s => { contagemPorTipo[s.tipo] = (contagemPorTipo[s.tipo] || 0) + 1; }));
-  const chipsHtml = Object.keys(LABELS_SINAL).filter(t => contagemPorTipo[t]).map(t =>
-    '<div class="filtro-chip' + (filtroSinalAtivo === t ? ' ativo' : '') + '" data-tipo="' + t + '">' + LABELS_SINAL[t] + ' (' + contagemPorTipo[t] + ')</div>'
-  ).join("");
-  document.getElementById("filtros").innerHTML =
-    '<div class="filtro-chip' + (filtroSinalAtivo === null ? ' ativo' : '') + '" data-tipo="">Todos</div>' +
-    chipsHtml +
-    '<label class="filtro-toggle"><input type="checkbox" id="toggle-ocultar" ' + (ocultarContatados ? "checked" : "") + '> ocultar contatados hoje</label>';
+  // Base pra contar os chips: se um vendedor específico está
+  // filtrado (modo master), os números dos chips refletem só a
+  // carteira dele — senão as contagens de sinal/recência ficariam
+  // enganosas depois de filtrar por vendedor.
+  const listaParaContagem = filtroVendedorAtivo ? estadoAtual.lista.filter(c => c.vendedor_responsavel === filtroVendedorAtivo) : estadoAtual.lista;
 
-  document.querySelectorAll(".filtro-chip").forEach(el => {
+  // Linha 1: filtro por sinal de ação (como já era)
+  const contagemPorTipo = {};
+  listaParaContagem.forEach(c => c.sinais.forEach(s => { contagemPorTipo[s.tipo] = (contagemPorTipo[s.tipo] || 0) + 1; }));
+  const chipsSinalHtml = Object.keys(LABELS_SINAL).filter(t => contagemPorTipo[t]).map(t =>
+    '<div class="filtro-chip filtro-sinal' + (filtroSinalAtivo === t ? ' ativo' : '') + '" data-tipo="' + t + '">' + LABELS_SINAL[t] + ' (' + contagemPorTipo[t] + ')</div>'
+  ).join("");
+
+  // Linha 2: filtro por classificação de recência (novo, 02/09/2026) —
+  // sempre mostrado, porque todo cliente tem uma classificação, tenha
+  // sinal de ação ou não.
+  const contagemPorClassificacao = {};
+  listaParaContagem.forEach(c => { contagemPorClassificacao[c.classificacao_recencia] = (contagemPorClassificacao[c.classificacao_recencia] || 0) + 1; });
+  const chipsClassificacaoHtml = Object.keys(LABELS_CLASSIFICACAO).filter(k => contagemPorClassificacao[k]).map(k =>
+    '<div class="filtro-chip filtro-classif' + (filtroClassificacaoAtivo === k ? ' ativo' : '') + '" data-classif="' + k + '">' + LABELS_CLASSIFICACAO[k] + ' (' + contagemPorClassificacao[k] + ')</div>'
+  ).join("");
+
+  // Linha 3: filtro por vendedor responsável — só existe em modo
+  // master (visão de todos os vendedores juntos), porque fora desse
+  // modo a carteira já é de um vendedor só (escolhido no login).
+  let linhaVendedorHtml = "";
+  if (estadoAtual.modo_master) {
+    const contagemPorVendedor = {};
+    estadoAtual.lista.forEach(c => { contagemPorVendedor[c.vendedor_responsavel] = (contagemPorVendedor[c.vendedor_responsavel] || 0) + 1; });
+    const vendedoresOrdenados = Object.keys(contagemPorVendedor).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const optionsHtml = '<option value="">Todos os vendedores</option>' +
+      vendedoresOrdenados.map(v => '<option value="' + escapeHtml(v) + '"' + (filtroVendedorAtivo === v ? " selected" : "") + '>' + escapeHtml(v) + ' (' + contagemPorVendedor[v] + ')</option>').join("");
+    linhaVendedorHtml = '<div class="filtros-linha"><span class="filtros-label">Vendedor</span><select id="filtro-vendedor-select">' + optionsHtml + '</select></div>';
+  }
+
+  document.getElementById("filtros").innerHTML =
+    '<div class="filtros-linha">' +
+      '<span class="filtros-label">Sinal</span>' +
+      '<div class="filtro-chip filtro-sinal' + (filtroSinalAtivo === null ? ' ativo' : '') + '" data-tipo="">Todos</div>' +
+      chipsSinalHtml +
+    '</div>' +
+    '<div class="filtros-linha">' +
+      '<span class="filtros-label">Recência</span>' +
+      '<div class="filtro-chip filtro-classif' + (filtroClassificacaoAtivo === null ? ' ativo' : '') + '" data-classif="">Todas</div>' +
+      chipsClassificacaoHtml +
+    '</div>' +
+    linhaVendedorHtml +
+    '<div class="filtros-linha">' +
+      '<label class="filtro-toggle" style="margin-left:0;"><input type="checkbox" id="toggle-somente-acao" ' + (somenteComAcao ? "checked" : "") + '> só com ação sugerida</label>' +
+      '<label class="filtro-toggle"><input type="checkbox" id="toggle-ocultar" ' + (ocultarContatados ? "checked" : "") + '> ocultar contatados hoje</label>' +
+    '</div>';
+
+  document.querySelectorAll(".filtro-sinal").forEach(el => {
     el.addEventListener("click", () => {
       filtroSinalAtivo = el.getAttribute("data-tipo") || null;
       renderTudo();
     });
+  });
+  document.querySelectorAll(".filtro-classif").forEach(el => {
+    el.addEventListener("click", () => {
+      filtroClassificacaoAtivo = el.getAttribute("data-classif") || null;
+      renderTudo();
+    });
+  });
+  const selectVendedor = document.getElementById("filtro-vendedor-select");
+  if (selectVendedor) {
+    selectVendedor.addEventListener("change", (ev) => {
+      filtroVendedorAtivo = ev.target.value || null;
+      renderTudo(); // recalcula os chips de sinal/recência considerando o vendedor escolhido
+    });
+  }
+  document.getElementById("toggle-somente-acao").addEventListener("change", (ev) => {
+    somenteComAcao = ev.target.checked;
+    renderListaFiltrada();
   });
   document.getElementById("toggle-ocultar").addEventListener("change", (ev) => {
     ocultarContatados = ev.target.checked;
@@ -409,7 +503,10 @@ function renderTudo() {
 function renderListaFiltrada() {
   const listaEl = document.getElementById("lista-clientes");
   let itens = estadoAtual.lista.slice();
+  if (somenteComAcao) itens = itens.filter(c => c.sinais.length > 0);
   if (filtroSinalAtivo) itens = itens.filter(c => c.sinais.some(s => s.tipo === filtroSinalAtivo));
+  if (filtroClassificacaoAtivo) itens = itens.filter(c => c.classificacao_recencia === filtroClassificacaoAtivo);
+  if (filtroVendedorAtivo) itens = itens.filter(c => c.vendedor_responsavel === filtroVendedorAtivo);
   if (ocultarContatados) itens = itens.filter(c => !c.contatado_hoje);
   if (buscaNome.trim()) {
     const termo = normalizarBusca_(buscaNome);
@@ -422,7 +519,7 @@ function renderListaFiltrada() {
   }
 
   if (itens.length === 0) {
-    listaEl.innerHTML = '<div class="estado-vazio">Nenhum cliente nessa visão agora. ' + (buscaNome.trim() ? "Confere se o nome digitado na busca está certo." : (ocultarContatados ? "Talvez já tenha contatado todo mundo hoje — desmarca \"ocultar contatados\" pra conferir." : "")) + '</div>';
+    listaEl.innerHTML = '<div class="estado-vazio">Nenhum cliente nessa visão agora. ' + (buscaNome.trim() ? "Confere se o nome digitado na busca está certo." : (somenteComAcao ? "Desmarca \"só com ação sugerida\" pra ver a carteira inteira." : (ocultarContatados ? "Talvez já tenha contatado todo mundo hoje — desmarca \"ocultar contatados\" pra conferir." : ""))) + '</div>';
     return;
   }
 
@@ -436,7 +533,10 @@ function renderListaFiltrada() {
 }
 
 function cardClienteHtml(c) {
-  const badgesHtml = c.sinais.map(s => '<span class="badge ' + s.tipo + '">' + LABELS_SINAL[s.tipo] + (s.tipo === "cross_sell" && s.sku_sugerido ? ": " + escapeHtml(s.sku_sugerido) : "") + '</span>').join("");
+  const badgeRecenciaHtml = c.classificacao_recencia
+    ? '<span class="badge-recencia ' + c.classificacao_recencia + '">' + (LABELS_CLASSIFICACAO[c.classificacao_recencia] || c.classificacao_recencia) + '</span>'
+    : "";
+  const badgesHtml = badgeRecenciaHtml + c.sinais.map(s => '<span class="badge ' + s.tipo + '">' + LABELS_SINAL[s.tipo] + (s.tipo === "cross_sell" && s.sku_sugerido ? ": " + escapeHtml(s.sku_sugerido) : "") + '</span>').join("");
   const contatoHtml = c.ultimo_contato
     ? '<div class="contato-info">✓ contatado em ' + formatDataCurta(c.ultimo_contato.data) + (c.ultimo_contato.nota ? " — " + escapeHtml(c.ultimo_contato.nota) : "") + '</div>'
     : "";
