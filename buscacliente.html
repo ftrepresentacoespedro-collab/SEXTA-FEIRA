@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Busca Vitanuts — Pedidos e Notas por Cliente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080b;
+    --bg-glow: radial-gradient(circle at 15% -10%, rgba(124, 108, 255, 0.10), transparent 45%),
+               radial-gradient(circle at 85% 0%, rgba(79, 140, 255, 0.06), transparent 40%);
+    --card: #101116;
+    --card-borda: #1e1f28;
+    --texto: #ced0dc;
+    --muted: #82869b;
+    --muted-fraco: #5c6076;
+    --acento: #7c6cff;
+    --acento-2: #4f8cff;
+    --erro-bubble: #2e1a1d;
+    --erro-texto: #ff9b9b;
+    --verde: #3ecf8e;
+    --verde-bg: #133027;
+    --amarelo: #f2c14e;
+    --amarelo-bg: #332a10;
+    --vermelho: #ff6b6b;
+    --vermelho-bg: #2e1a1d;
+    --cinza: #9aa0b8;
+    --cinza-bg: #1c1e29;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg);
+    background-image: var(--bg-glow);
+    background-attachment: fixed;
+    color: var(--texto);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- tela de login ---------- */
+  #login {
+    max-width: 340px;
+    margin: 12vh auto 0;
+    padding: 36px 30px;
+    background: var(--card);
+    border: 1px solid var(--card-borda);
+    border-radius: 18px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  #login .avatar {
+    width: 52px; height: 52px;
+    margin: 0 auto 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 18px; color: #fff;
+    letter-spacing: 0.5px;
+  }
+  #login h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 0.3px; }
+  #login p.subtitulo { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  #login input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--card-borda);
+    background: #0f1016;
+    color: var(--texto);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  #login input:focus { border-color: var(--acento); }
+  #login input:-webkit-autofill,
+  #login input:-webkit-autofill:hover,
+  #login input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #0f1016 inset;
+    -webkit-text-fill-color: var(--texto);
+    caret-color: var(--texto);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  #login button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+  }
+  #login button:hover:not(:disabled) { opacity: 0.92; }
+  #login button:active:not(:disabled) { transform: scale(0.98); }
+  #login button:disabled { opacity: 0.5; cursor: default; }
+  #login p.erro { color: var(--erro-texto); font-size: 13px; margin-top: 12px; margin-bottom: 0; }
+
+  /* ---------- app ---------- */
+  #app { display: none; flex-direction: column; min-height: 100vh; max-width: 720px; margin: 0 auto; }
+  header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--card-borda);
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  header .avatar {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0;
+  }
+  header .titulos { display: flex; flex-direction: column; line-height: 1.25; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: 0.3px; }
+  header span { font-size: 12px; color: var(--muted); }
+  header .sair-btn {
+    margin-left: auto; font-size: 12px; color: var(--muted);
+    background: none; border: 1px solid var(--card-borda); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer; font-family: inherit;
+  }
+  header .sair-btn:hover { color: var(--texto); border-color: var(--muted-fraco); }
+
+  main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---------- busca ---------- */
+  #busca-form { display: flex; gap: 8px; }
+  #busca-input {
+    flex: 1; padding: 13px 16px; border-radius: 12px;
+    border: 1px solid var(--card-borda); background: var(--card);
+    color: var(--texto); font-size: 14.5px; font-family: inherit; outline: none;
+    transition: border-color 0.15s ease;
+  }
+  #busca-input:focus { border-color: var(--acento); }
+  #busca-form button {
+    padding: 0 20px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; font-family: inherit;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+  }
+  #busca-form button:hover:not(:disabled) { opacity: 0.92; }
+  #busca-form button:active:not(:disabled) { transform: scale(0.97); }
+  #busca-form button:disabled { opacity: 0.5; cursor: default; }
+  #busca-dica { font-size: 12.5px; color: var(--muted-fraco); margin: -8px 2px 0; }
+
+  .aviso { font-size: 13.5px; color: var(--muted); padding: 4px 2px; }
+  .aviso.erro { color: var(--erro-texto); }
+
+  /* ---------- lista de candidatos ---------- */
+  #candidatos { display: flex; flex-direction: column; gap: 8px; }
+  .candidato-item {
+    text-align: left; background: var(--card); border: 1px solid var(--card-borda);
+    color: var(--texto); padding: 12px 14px; border-radius: 10px;
+    font-family: inherit; cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .candidato-item:hover { border-color: var(--acento); background: #1a1b24; }
+  .candidato-item .nome { font-size: 14px; font-weight: 600; color: #e4e5ee; }
+  .candidato-item .meta { font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- card do cliente ---------- */
+  #voltar-btn {
+    align-self: flex-start; font-size: 12.5px; color: var(--muted);
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    padding: 4px 0; display: flex; align-items: center; gap: 4px;
+  }
+  #voltar-btn:hover { color: var(--texto); }
+
+  .card-cliente {
+    background: var(--card); border: 1px solid var(--card-borda); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .card-cliente h2 { margin: 0 0 3px; font-size: 17px; font-weight: 700; color: #e4e5ee; }
+  .card-cliente .subinfo { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .resumo-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .resumo-item {
+    background: #0f1016; border: 1px solid var(--card-borda); border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .resumo-item .rotulo { font-size: 11px; color: var(--muted-fraco); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .resumo-item .valor { font-size: 14.5px; font-weight: 600; color: #e4e5ee; }
+
+  /* ---------- abas ---------- */
+  .abas { display: flex; gap: 6px; border-bottom: 1px solid var(--card-borda); }
+  .aba-btn {
+    padding: 10px 4px; background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .aba-btn.ativa { color: var(--acento-2); border-bottom-color: var(--acento-2); }
+
+  .lista-itens { display: flex; flex-direction: column; gap: 8px; }
+  .item-row {
+    background: var(--card); border: 1px solid var(--card-borda); border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .item-row-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .item-row .numero { font-size: 14px; font-weight: 700; color: #e4e5ee; }
+  .item-row .data { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .item-row .valor { font-size: 14px; font-weight: 600; color: #e4e5ee; text-align: right; white-space: nowrap; }
+  .item-row .canal { font-size: 11.5px; color: var(--muted-fraco); text-align: right; margin-top: 1px; }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+    padding: 3px 8px; border-radius: 6px; margin-top: 6px;
+  }
+  .badge.atendido { color: var(--verde); background: var(--verde-bg); }
+  .badge.aberto { color: var(--amarelo); background: var(--amarelo-bg); }
+  .badge.cancelado { color: var(--vermelho); background: var(--vermelho-bg); }
+  .badge.outro { color: var(--cinza); background: var(--cinza-bg); }
+
+  .item-acoes { display: flex; gap: 8px; margin-top: 10px; }
+  .item-acoes button {
+    flex: 1; font-size: 12.5px; font-weight: 600; padding: 8px 10px;
+    border-radius: 8px; border: 1px solid var(--card-borda); background: #0f1016;
+    color: var(--texto); cursor: pointer; font-family: inherit;
+    transition: border-color 0.15s ease;
+  }
+  .item-acoes button:hover:not(:disabled) { border-color: var(--acento); color: #e4e5ee; }
+  .item-acoes button:disabled { opacity: 0.5; cursor: default; }
+
+  .itens-detalhe {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--card-borda);
+    font-size: 12.5px;
+  }
+  .itens-detalhe .linha-item { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; color: var(--muted); }
+  .itens-detalhe .linha-item .nome-prod { color: var(--texto); }
+  .itens-detalhe .msg-erro { color: var(--erro-texto); }
+
+  .vazio { text-align: center; color: var(--muted-fraco); font-size: 13px; padding: 24px 0; }
+
+  .spinner-inline {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--card-borda); border-top-color: var(--acento-2);
+    animation: girar 0.7s linear infinite; vertical-align: -2px; margin-right: 6px;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="avatar">BV</div>
+  <h2>Busca Vitanuts</h2>
+  <p class="subtitulo">Pedidos e notas fiscais por cliente</p>
+  <input type="password" id="senha-input" placeholder="Senha de acesso" autocomplete="off">
+  <button id="entrar-btn">Entrar</button>
+  <p class="erro" id="login-erro" style="display:none;"></p>
+</div>
+
+<div id="app">
+  <header>
+    <div class="avatar">BV</div>
+    <div class="titulos">
+      <h1>Busca Vitanuts</h1>
+      <span>pedidos e notas por cliente</span>
+    </div>
+    <button class="sair-btn" id="sair-btn" type="button">Sair</button>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+  // Mesma implantação (Web App) do Code_IA.gs que já atende o chat
+  // SEXTA FEIRA — essa tela só chama um endpoint NOVO e aditivo
+  // (?busca_admin=1) do mesmo backend, nada aqui muda o chat.
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwKXJEG2FBh8uqrFy4HsEPPbJRoCVFJoPWaCZvrfvM9EDbLxGZekueVTVtArScf9yBZ/exec";
+
+  const mainEl = document.getElementById("main");
+  const entrarBtn = document.getElementById("entrar-btn");
+  const sairBtn = document.getElementById("sair-btn");
+  const senhaInputEl = document.getElementById("senha-input");
+  const loginErroEl = document.getElementById("login-erro");
+
+  // Chave de sessão PRÓPRIA dessa tela — de propósito diferente da
+  // usada pelo chat (sexta_feira_senha), pra login de uma não
+  // depender/misturar com o login da outra, mesmo sendo a mesma senha
+  // por trás (DASHBOARD_SENHA, validada no backend).
+  function senhaSalva() { return localStorage.getItem("busca_vitanuts_senha") || ""; }
+
+  function escaparHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function formatarMoeda(v) {
+    if (v == null || isNaN(v)) return "—";
+    return Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function formatarData(iso) {
+    if (!iso) return "—";
+    const p = iso.split("-");
+    if (p.length !== 3) return iso;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  function formatarCnpjCpf(digitos) {
+    const d = String(digitos || "").replace(/\D/g, "");
+    if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+    if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    return d;
+  }
+
+  function classeBadgeSituacao(situacao) {
+    const s = (situacao || "").toLowerCase();
+    if (s.indexOf("atendido") !== -1) return "atendido";
+    if (s.indexOf("aberto") !== -1 || s.indexOf("digitação") !== -1) return "aberto";
+    if (s.indexOf("cancelado") !== -1) return "cancelado";
+    return "outro";
+  }
+
+  // Mesmo padrão JSONP usado no chat e nos outros painéis Vitanuts —
+  // evita CORS entre GitHub Pages e Apps Script. 45s: essa tela só faz
+  // leitura de cache local (rápido) ou no máximo 1-2 chamadas ao vivo
+  // por clique (PDF/itens de UM item específico), nunca a cadeia de
+  // várias chamadas que o chat às vezes faz.
+  function chamarBackend(params) {
+    return new Promise((resolve, reject) => {
+      const callbackName = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      const timeoutId = setTimeout(() => {
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error("tempo_esgotado"));
+      }, 45000);
+      window[callbackName] = (dados) => {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(dados);
+      };
+      const query = Object.keys(params)
+        .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
+        .join("&");
+      const script = document.createElement("script");
+      script.src = WEBAPP_URL + "?" + query + "&callback=" + callbackName;
+      script.onerror = () => {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        reject(new Error("falha_de_rede"));
+      };
+      document.body.appendChild(script);
+    });
+  }
+
+  async function chamarBuscaAdmin(paramsExtra) {
+    const params = Object.assign({ senha: senhaSalva(), busca_admin: "1" }, paramsExtra);
+    const resp = await chamarBackend(params);
+    if (resp.erro === "senha_incorreta") {
+      localStorage.removeItem("busca_vitanuts_senha");
+      mostrarLogin("Senha incorreta — entre de novo.");
+      throw new Error("senha_incorreta");
+    }
+    return resp;
+  }
+
+  // ---------- tela de busca ----------
+  function renderBusca(mensagemAviso) {
+    mainEl.innerHTML = "";
+
+    const form = document.createElement("form");
+    form.id = "busca-form";
+    form.innerHTML = '<input type="text" id="busca-input" placeholder="Nome ou CNPJ/CPF do cliente..." autocomplete="off">' +
+                      '<button type="submit" id="busca-btn">Buscar</button>';
+    mainEl.appendChild(form);
+
+    const dica = document.createElement("div");
+    dica.id = "busca-dica";
+    dica.className = "aviso";
+    dica.textContent = "Digite parte do nome (mín. 2 letras) ou o CNPJ/CPF (mín. 4 dígitos).";
+    mainEl.appendChild(dica);
+
+    const resultadosWrap = document.createElement("div");
+    resultadosWrap.id = "candidatos";
+    mainEl.appendChild(resultadosWrap);
+
+    if (mensagemAviso) {
+      const avisoEl = document.createElement("div");
+      avisoEl.className = "aviso erro";
+      avisoEl.textContent = mensagemAviso;
+      resultadosWrap.appendChild(avisoEl);
+    }
+
+    const inputEl = document.getElementById("busca-input");
+    const btnEl = document.getElementById("busca-btn");
+    inputEl.focus();
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const termo = inputEl.value.trim();
+      if (!termo) return;
+      btnEl.disabled = true;
+      resultadosWrap.innerHTML = '<div class="aviso"><span class="spinner-inline"></span>Buscando...</div>';
+      try {
+        const resp = await chamarBuscaAdmin({ termo: termo });
+        if (resp.erro) {
+          resultadosWrap.innerHTML = "";
+          const avisoEl = document.createElement("div");
+          avisoEl.className = "aviso erro";
+          avisoEl.textContent = resp.mensagem || ("Deu erro: " + resp.erro);
+          resultadosWrap.appendChild(avisoEl);
+          return;
+        }
+        const clientes = resp.clientes || [];
+        if (clientes.length === 0) {
+          resultadosWrap.innerHTML = '<div class="aviso">Nenhum cliente encontrado com esse termo.</div>';
+          return;
+        }
+        if (clientes.length === 1) {
+          abrirClientePorCnpj(clientes[0].cnpj);
+          return;
+        }
+        resultadosWrap.innerHTML = "";
+        clientes.forEach(c => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "candidato-item";
+          const cidadeUf = [c.cidade, c.uf].filter(Boolean).join(" / ");
+          item.innerHTML = '<span class="nome">' + escaparHtml(c.nome || "?") + '</span>' +
+                            '<span class="meta">' + escaparHtml(formatarCnpjCpf(c.cnpj)) + (cidadeUf ? " · " + escaparHtml(cidadeUf) : "") + '</span>';
+          item.addEventListener("click", () => abrirClientePorCnpj(c.cnpj));
+          resultadosWrap.appendChild(item);
+        });
+      } catch (e) {
+        if (e.message === "senha_incorreta") return;
+        resultadosWrap.innerHTML = '<div class="aviso erro">Não consegui falar com o servidor (' + escaparHtml(e.message) + '). Tenta de novo.</div>';
+      } finally {
+        btnEl.disabled = false;
+      }
+    });
+  }
+
+  // ---------- card do cliente ----------
+  async function abrirClientePorCnpj(cnpj) {
+    mainEl.innerHTML = '<div class="aviso"><span class="spinner-inline"></span>Carregando cliente...</div>';
+    try {
+      const resp = await chamarBuscaAdmin({ cnpj: cnpj });
+      if (resp.erro) {
+        renderBusca(resp.mensagem || "Cliente não encontrado.");
+        return;
+      }
+      renderCardCliente(resp);
+    } catch (e) {
+      if (e.message === "senha_incorreta") return;
+      mainEl.innerHTML = '<div class="aviso erro">Não consegui carregar esse cliente (' + escaparHtml(e.message) + ').</div>';
+    }
+  }
+
+  function renderCardCliente(dados) {
+    mainEl.innerHTML = "";
+
+    const voltarBtn = document.createElement("button");
+    voltarBtn.id = "voltar-btn";
+    voltarBtn.type = "button";
+    voltarBtn.textContent = "‹ Nova busca";
+    voltarBtn.addEventListener("click", () => renderBusca());
+    mainEl.appendChild(voltarBtn);
+
+    const card = document.createElement("div");
+    card.className = "card-cliente";
+    const cidadeUf = [dados.cidade, dados.uf].filter(Boolean).join(" / ");
+    const r = dados.resumo_notas || {};
+    card.innerHTML =
+      '<h2>' + escaparHtml(dados.nome || "?") + '</h2>' +
+      '<div class="subinfo">' + escaparHtml(formatarCnpjCpf(dados.cnpj)) + (cidadeUf ? " · " + escaparHtml(cidadeUf) : "") + '</div>' +
+      '<div class="resumo-grid">' +
+        '<div class="resumo-item"><div class="rotulo">Notas fiscais</div><div class="valor">' + (r.total_notas || 0) + '</div></div>' +
+        '<div class="resumo-item"><div class="rotulo">Valor total (notas)</div><div class="valor">' + formatarMoeda(r.valor_total) + '</div></div>' +
+        '<div class="resumo-item"><div class="rotulo">Primeira compra</div><div class="valor">' + formatarData(r.primeira_compra) + '</div></div>' +
+        '<div class="resumo-item"><div class="rotulo">Última compra</div><div class="valor">' + formatarData(r.ultima_compra) + '</div></div>' +
+        '<div class="resumo-item"><div class="rotulo">Ticket médio</div><div class="valor">' + formatarMoeda(r.ticket_medio) + '</div></div>' +
+        '<div class="resumo-item"><div class="rotulo">Pedidos de venda</div><div class="valor">' + (dados.pedidos ? dados.pedidos.length : 0) + '</div></div>' +
+      '</div>';
+    mainEl.appendChild(card);
+
+    const abas = document.createElement("div");
+    abas.className = "abas";
+    abas.innerHTML =
+      '<button type="button" class="aba-btn ativa" data-aba="notas">Notas fiscais (' + (dados.notas ? dados.notas.length : 0) + ')</button>' +
+      '<button type="button" class="aba-btn" data-aba="pedidos">Pedidos (' + (dados.pedidos ? dados.pedidos.length : 0) + ')</button>';
+    mainEl.appendChild(abas);
+
+    const listaEl = document.createElement("div");
+    listaEl.className = "lista-itens";
+    mainEl.appendChild(listaEl);
+
+    function mostrarAba(aba) {
+      abas.querySelectorAll(".aba-btn").forEach(b => b.classList.toggle("ativa", b.dataset.aba === aba));
+      if (aba === "notas") renderListaNotas(listaEl, dados.notas || []);
+      else renderListaPedidos(listaEl, dados.pedidos || []);
+    }
+    abas.querySelectorAll(".aba-btn").forEach(b => b.addEventListener("click", () => mostrarAba(b.dataset.aba)));
+    mostrarAba("notas");
+  }
+
+  function renderListaNotas(container, notas) {
+    container.innerHTML = "";
+    if (notas.length === 0) {
+      container.innerHTML = '<div class="vazio">Nenhuma nota fiscal encontrada pra esse cliente no histórico já sincronizado.</div>';
+      return;
+    }
+    notas.forEach(n => {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      const canalTexto = [n.canal, n.plataforma].filter(Boolean).join(" · ");
+      row.innerHTML =
+        '<div class="item-row-topo">' +
+          '<div><div class="numero">Nota ' + escaparHtml(n.numero) + '</div><div class="data">' + formatarData(n.data) + '</div></div>' +
+          '<div><div class="valor">' + formatarMoeda(n.valor) + '</div>' + (canalTexto ? '<div class="canal">' + escaparHtml(canalTexto) + '</div>' : '') + '</div>' +
+        '</div>' +
+        '<div class="item-acoes">' +
+          '<button type="button" class="btn-pdf">Ver PDF</button>' +
+          '<button type="button" class="btn-itens">Itens</button>' +
+        '</div>';
+      const acaoPdf = row.querySelector(".btn-pdf");
+      const acaoItens = row.querySelector(".btn-itens");
+      acaoPdf.addEventListener("click", () => buscarPdfNota(n.numero, acaoPdf, row));
+      acaoItens.addEventListener("click", () => buscarItensNota(n.numero, acaoItens, row));
+      container.appendChild(row);
+    });
+  }
+
+  function renderListaPedidos(container, pedidos) {
+    container.innerHTML = "";
+    if (pedidos.length === 0) {
+      container.innerHTML = '<div class="vazio">Nenhum pedido de venda encontrado pra esse cliente no histórico já sincronizado.</div>';
+      return;
+    }
+    pedidos.forEach(p => {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      const canalTexto = [p.canal, p.plataforma].filter(Boolean).join(" · ");
+      row.innerHTML =
+        '<div class="item-row-topo">' +
+          '<div><div class="numero">Pedido ' + escaparHtml(p.numero) + '</div><div class="data">' + formatarData(p.data) + '</div></div>' +
+          '<div><div class="valor">' + formatarMoeda(p.valor) + '</div>' + (canalTexto ? '<div class="canal">' + escaparHtml(canalTexto) + '</div>' : '') + '</div>' +
+        '</div>' +
+        '<span class="badge ' + classeBadgeSituacao(p.situacao) + '">' + escaparHtml(p.situacao || "?") + '</span>' +
+        '<div class="item-acoes">' +
+          '<button type="button" class="btn-pdf">Ver PDF</button>' +
+          '<button type="button" class="btn-itens">Itens</button>' +
+        '</div>';
+      const acaoPdf = row.querySelector(".btn-pdf");
+      const acaoItens = row.querySelector(".btn-itens");
+      acaoPdf.addEventListener("click", () => buscarPdfPedido(p.numero, acaoPdf, row));
+      acaoItens.addEventListener("click", () => buscarItensPedido(p.numero, acaoItens, row));
+      container.appendChild(row);
+    });
+  }
+
+  // Cada linha (nota ou pedido) só mostra UM detalhe expandido por vez
+  // (PDF ou itens). Clicar de novo na MESMA ação que já está aberta
+  // fecha (toggle); clicar na OUTRA ação troca o conteúdo em vez de só
+  // fechar — sem isso, "Ver PDF" seguido de "Itens" na mesma nota só
+  // fechava o PDF e não abria os itens, confuso pro ADM.
+  function prepararDetalhe(row, acao) {
+    const existente = row.querySelector(".itens-detalhe");
+    if (existente) {
+      const eraMesmaAcao = existente.dataset.acao === acao;
+      existente.remove();
+      if (eraMesmaAcao) return null;
+    }
+    const detalhe = document.createElement("div");
+    detalhe.className = "itens-detalhe";
+    detalhe.dataset.acao = acao;
+    row.appendChild(detalhe);
+    return detalhe;
+  }
+
+  async function buscarPdfNota(numero, botao, row) {
+    const detalhe = prepararDetalhe(row, "pdf");
+    if (!detalhe) return;
+    detalhe.innerHTML = '<span class="spinner-inline"></span>Buscando link do PDF...';
+    botao.disabled = true;
+    try {
+      const resp = await chamarBuscaAdmin({ pdf_nota: numero });
+      if (resp.erro) { detalhe.innerHTML = '<span class="msg-erro">' + escaparHtml(resp.mensagem || resp.erro) + '</span>'; return; }
+      detalhe.innerHTML = '<a href="' + escaparHtml(resp.link_pdf) + '" target="_blank" rel="noopener noreferrer" style="color:var(--acento-2);">Abrir PDF da nota ' + escaparHtml(resp.numero) + ' ↗</a>';
+    } catch (e) {
+      if (e.message !== "senha_incorreta") detalhe.innerHTML = '<span class="msg-erro">Falha ao buscar o PDF (' + escaparHtml(e.message) + ').</span>';
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  async function buscarPdfPedido(numero, botao, row) {
+    const detalhe = prepararDetalhe(row, "pdf");
+    if (!detalhe) return;
+    detalhe.innerHTML = '<span class="spinner-inline"></span>Buscando link do PDF...';
+    botao.disabled = true;
+    try {
+      const resp = await chamarBuscaAdmin({ pdf_pedido: numero });
+      if (resp.erro) { detalhe.innerHTML = '<span class="msg-erro">' + escaparHtml(resp.mensagem || resp.erro) + '</span>'; return; }
+      detalhe.innerHTML = '<a href="' + escaparHtml(resp.link_pdf) + '" target="_blank" rel="noopener noreferrer" style="color:var(--acento-2);">Abrir PDF da nota ' + escaparHtml(resp.numero_nota_vinculada) + ' (vinculada ao pedido ' + escaparHtml(resp.numero_pedido) + ') ↗</a>';
+    } catch (e) {
+      if (e.message !== "senha_incorreta") detalhe.innerHTML = '<span class="msg-erro">Falha ao buscar o PDF (' + escaparHtml(e.message) + ').</span>';
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  function renderItensLista(detalhe, itens, valorTotal) {
+    if (!itens || itens.length === 0) {
+      detalhe.innerHTML = '<span class="msg-erro">Nenhum item encontrado.</span>';
+      return;
+    }
+    let html = "";
+    itens.forEach(it => {
+      html += '<div class="linha-item"><span class="nome-prod">' + escaparHtml(it.quantidade) + 'x ' + escaparHtml(it.nome || it.sku || "?") + '</span><span>' + formatarMoeda(it.valor_total_item) + '</span></div>';
+    });
+    if (valorTotal != null) html += '<div class="linha-item" style="border-top:1px solid var(--card-borda);margin-top:4px;padding-top:6px;"><span class="nome-prod" style="font-weight:600;">Total</span><span style="font-weight:600;">' + formatarMoeda(valorTotal) + '</span></div>';
+    detalhe.innerHTML = html;
+  }
+
+  async function buscarItensNota(numero, botao, row) {
+    const detalhe = prepararDetalhe(row, "itens");
+    if (!detalhe) return;
+    detalhe.innerHTML = '<span class="spinner-inline"></span>Carregando itens...';
+    botao.disabled = true;
+    try {
+      const resp = await chamarBuscaAdmin({ itens_nota: numero });
+      if (resp.erro) { detalhe.innerHTML = '<span class="msg-erro">' + escaparHtml(resp.mensagem || resp.erro) + '</span>'; return; }
+      renderItensLista(detalhe, resp.itens, resp.valor_total_nota);
+    } catch (e) {
+      if (e.message !== "senha_incorreta") detalhe.innerHTML = '<span class="msg-erro">Falha ao buscar itens (' + escaparHtml(e.message) + ').</span>';
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  async function buscarItensPedido(numero, botao, row) {
+    const detalhe = prepararDetalhe(row, "itens");
+    if (!detalhe) return;
+    detalhe.innerHTML = '<span class="spinner-inline"></span>Carregando itens...';
+    botao.disabled = true;
+    try {
+      const resp = await chamarBuscaAdmin({ itens_pedido: numero });
+      if (resp.erro) { detalhe.innerHTML = '<span class="msg-erro">' + escaparHtml(resp.mensagem || resp.erro) + '</span>'; return; }
+      renderItensLista(detalhe, resp.itens, resp.valor_total_pedido);
+    } catch (e) {
+      if (e.message !== "senha_incorreta") detalhe.innerHTML = '<span class="msg-erro">Falha ao buscar itens (' + escaparHtml(e.message) + ').</span>';
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  // ---------- login ----------
+  function mostrarApp() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    renderBusca();
+  }
+
+  function mostrarLogin(erro) {
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login").style.display = "block";
+    if (erro) { loginErroEl.textContent = erro; loginErroEl.style.display = "block"; }
+    else { loginErroEl.style.display = "none"; }
+    entrarBtn.disabled = false;
+  }
+
+  async function tentarEntrar(senha) {
+    entrarBtn.disabled = true;
+    try {
+      const resp = await chamarBackend({ senha: senha, secao: "sync_estado" });
+      if (resp.erro === "senha_incorreta") {
+        localStorage.removeItem("busca_vitanuts_senha");
+        mostrarLogin("Senha incorreta.");
+        return;
+      }
+      localStorage.setItem("busca_vitanuts_senha", senha);
+      mostrarApp();
+    } catch (e) {
+      mostrarLogin("Não consegui falar com o servidor — confira sua conexão.");
+    }
+  }
+
+  entrarBtn.addEventListener("click", () => {
+    const senha = senhaInputEl.value;
+    if (!senha) return;
+    tentarEntrar(senha);
+  });
+  senhaInputEl.addEventListener("keydown", (ev) => { if (ev.key === "Enter") entrarBtn.click(); });
+
+  sairBtn.addEventListener("click", () => {
+    localStorage.removeItem("busca_vitanuts_senha");
+    senhaInputEl.value = "";
+    mostrarLogin();
+  });
+
+  if (senhaSalva()) tentarEntrar(senhaSalva());
+  else mostrarLogin();
+</script>
+</body>
+</html>
