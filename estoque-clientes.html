@@ -108,6 +108,21 @@
 
   #buscar-btn { margin-top: 14px; }
 
+  #tabs-canal { display: flex; gap: 6px; margin-bottom: 4px; }
+  .tab-canal {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+  .tab-canal.ativo { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-canal:hover:not(.ativo) { background: #f7f6f2; }
+
   #resultado-header {
     display: flex;
     justify-content: space-between;
@@ -183,7 +198,13 @@
 
   <div class="layout">
     <div class="panel">
-      <h2>Marque os itens parados</h2>
+      <h2>Canal</h2>
+      <div id="tabs-canal">
+        <button class="tab-canal ativo" data-canal="">Todos</button>
+        <button class="tab-canal" data-canal="B2B">B2B</button>
+        <button class="tab-canal" data-canal="B2C">B2C</button>
+      </div>
+      <h2 style="margin-top:16px;">Marque os itens parados</h2>
       <div id="catalogo-lista"></div>
       <button id="buscar-btn" class="btn-primary">Buscar clientes</button>
     </div>
@@ -239,6 +260,17 @@ const CATALOGO = [
 const SENHA_STORAGE_KEY = "vitanuts_estoque_clientes_senha";
 let clientesResultado = []; // resultado cru do backend, nesta rodada
 let removidos = new Set(); // cnpjs removidos nesta rodada (não persiste)
+let canalSelecionado = ""; // "" = todos, "B2B" ou "B2C" — controla o que a busca traz
+
+function configurarTabsCanal() {
+  document.querySelectorAll(".tab-canal").forEach(btn => {
+    btn.addEventListener("click", () => {
+      canalSelecionado = btn.dataset.canal;
+      document.querySelectorAll(".tab-canal").forEach(b => b.classList.remove("ativo"));
+      btn.classList.add("ativo");
+    });
+  });
+}
 
 function montarCatalogo() {
   const container = document.getElementById("catalogo-lista");
@@ -307,7 +339,8 @@ function renderizarResultado() {
   }
 
   vazio.style.display = "none";
-  meta.textContent = clientesResultado.length + " cliente(s)" + (totalRemovidos > 0 ? " · " + totalRemovidos + " removido(s)" : "");
+  const canalLabel = canalSelecionado ? " · canal: " + canalSelecionado : " · todos os canais";
+  meta.textContent = clientesResultado.length + " cliente(s)" + canalLabel + (totalRemovidos > 0 ? " · " + totalRemovidos + " removido(s)" : "");
   copiarBtn.style.display = visiveis.length > 0 ? "block" : "none";
 
   lista.innerHTML = "";
@@ -361,11 +394,13 @@ async function buscarClientes() {
   removidos = new Set();
 
   try {
-    const data = await chamarBackendJsonp({
+    const params = {
       estoque_clientes: "1",
       senha: senha,
       skus: skus.join(","),
-    });
+    };
+    if (canalSelecionado) params.canal = canalSelecionado;
+    const data = await chamarBackendJsonp(params);
 
     document.getElementById("estado-carregando").style.display = "none";
 
@@ -415,6 +450,7 @@ document.getElementById("buscar-btn").addEventListener("click", buscarClientes);
 document.getElementById("copiar-btn").addEventListener("click", copiarListaFinal);
 
 montarCatalogo();
+configurarTabsCanal();
 
 // Se já tiver senha salva de uma visita anterior, pula a tela de login
 // direto — mesmo padrão dos outros painéis Vitanuts (senha em
