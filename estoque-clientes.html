@@ -108,8 +108,8 @@
 
   #buscar-btn { margin-top: 14px; }
 
-  #tabs-canal { display: flex; gap: 6px; margin-bottom: 4px; }
-  .tab-canal {
+  #tabs-canal, #tabs-modo { display: flex; gap: 6px; margin-bottom: 4px; }
+  .tab-canal, .tab-modo {
     flex: 1;
     padding: 8px 10px;
     border: 1px solid var(--border-strong);
@@ -120,8 +120,8 @@
     cursor: pointer;
     color: var(--text-secondary);
   }
-  .tab-canal.ativo { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .tab-canal:hover:not(.ativo) { background: #f7f6f2; }
+  .tab-canal.ativo, .tab-modo.ativo { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-canal:hover:not(.ativo), .tab-modo:hover:not(.ativo) { background: #f7f6f2; }
 
   #resultado-header {
     display: flex;
@@ -152,6 +152,7 @@
   .cliente-card .pct { font-size: 12px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
   .cliente-card.match-100 .pct { color: var(--success); }
   .cliente-card .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .cliente-card .sub-faltantes { margin-top: 4px; }
   .cliente-card .aviso-parado { color: var(--danger); font-weight: 600; }
   .cliente-card button {
     flex-shrink: 0;
@@ -198,13 +199,18 @@
 
   <div class="layout">
     <div class="panel">
-      <h2>Canal</h2>
+      <h2>O que buscar</h2>
+      <div id="tabs-modo">
+        <button class="tab-modo ativo" data-modo="comprou">Já compraram</button>
+        <button class="tab-modo" data-modo="nunca_compraram">Nunca compraram</button>
+      </div>
+      <h2 style="margin-top:16px;">Canal</h2>
       <div id="tabs-canal">
         <button class="tab-canal ativo" data-canal="">Todos</button>
         <button class="tab-canal" data-canal="B2B">B2B</button>
         <button class="tab-canal" data-canal="B2C">B2C</button>
       </div>
-      <h2 style="margin-top:16px;">Marque os itens parados</h2>
+      <h2 id="catalogo-titulo" style="margin-top:16px;">Marque os itens</h2>
       <div id="catalogo-lista"></div>
       <button id="buscar-btn" class="btn-primary">Buscar clientes</button>
     </div>
@@ -261,6 +267,7 @@ const SENHA_STORAGE_KEY = "vitanuts_estoque_clientes_senha";
 let clientesResultado = []; // resultado cru do backend, nesta rodada
 let removidos = new Set(); // cnpjs removidos nesta rodada (não persiste)
 let canalSelecionado = ""; // "" = todos, "B2B" ou "B2C" — controla o que a busca traz
+let modoSelecionado = "comprou"; // "comprou" (padrão) ou "nunca_compraram"
 
 function configurarTabsCanal() {
   document.querySelectorAll(".tab-canal").forEach(btn => {
@@ -268,6 +275,20 @@ function configurarTabsCanal() {
       canalSelecionado = btn.dataset.canal;
       document.querySelectorAll(".tab-canal").forEach(b => b.classList.remove("ativo"));
       btn.classList.add("ativo");
+    });
+  });
+}
+
+function configurarTabsModo() {
+  document.querySelectorAll(".tab-modo").forEach(btn => {
+    btn.addEventListener("click", () => {
+      modoSelecionado = btn.dataset.modo;
+      document.querySelectorAll(".tab-modo").forEach(b => b.classList.remove("ativo"));
+      btn.classList.add("ativo");
+      const catalogoTitulo = document.getElementById("catalogo-titulo");
+      if (catalogoTitulo) {
+        catalogoTitulo.textContent = modoSelecionado === "nunca_compraram" ? "Marque os itens" : "Marque os itens parados";
+      }
     });
   });
 }
@@ -322,6 +343,13 @@ function chamarBackendJsonp(params) {
   });
 }
 
+function nomesSkus(codigos) {
+  return codigos.map(cod => {
+    const item = CATALOGO.find(i => i.cod === cod);
+    return item ? item.nome : cod;
+  }).join(", ");
+}
+
 function renderizarResultado() {
   const lista = document.getElementById("lista-clientes");
   const meta = document.getElementById("resultado-meta");
@@ -347,18 +375,30 @@ function renderizarResultado() {
   clientesResultado.forEach(c => {
     const foiRemovido = removidos.has(c.cnpj);
     const card = document.createElement("div");
-    card.className = "cliente-card" + (c.percentual_match >= 100 ? " match-100" : "") + (foiRemovido ? " removido" : "");
+
+    let badgeHtml, subExtra;
+    if (modoSelecionado === "nunca_compraram") {
+      card.className = "cliente-card" + (foiRemovido ? " removido" : "");
+      badgeHtml = '<span class="pct">' + c.total_skus_nunca_comprados + ' de ' + c.total_skus_marcados + ' nunca comprados</span>';
+      subExtra = '<div class="sub sub-faltantes">Faltam: ' + escaparHtml(nomesSkus(c.skus_nunca_comprados)) + '</div>';
+    } else {
+      card.className = "cliente-card" + (c.percentual_match >= 100 ? " match-100" : "") + (foiRemovido ? " removido" : "");
+      badgeHtml = '<span class="pct">' + c.percentual_match + '% · ' + c.total_skus_marcados_comprados + ' de ' + c.total_skus_marcados + '</span>';
+      subExtra = '';
+    }
+
     card.innerHTML =
       '<div class="info">' +
         '<div class="linha1">' +
           '<span class="nome' + (foiRemovido ? " riscado" : "") + '">' + escaparHtml(c.nome) + '</span>' +
-          '<span class="pct">' + c.percentual_match + '% · ' + c.total_skus_marcados_comprados + ' de ' + c.total_skus_marcados + '</span>' +
+          badgeHtml +
         '</div>' +
         '<div class="sub">' + c.dias_sem_comprar + ' dias sem comprar' +
           (c.pedido_parado && c.pedido_parado.tem
             ? ' <span class="aviso-parado">· ' + c.pedido_parado.total + ' pedido(s) parado(s) (' + Object.keys(c.pedido_parado.situacoes).join(", ") + ') — R$ ' + c.pedido_parado.valor.toLocaleString("pt-BR") + '</span>'
             : '') +
         '</div>' +
+        subExtra +
       '</div>' +
       '<button data-cnpj="' + c.cnpj + '">' + (foiRemovido ? "Desfazer" : "✕") + '</button>';
     card.querySelector("button").addEventListener("click", () => {
@@ -398,6 +438,7 @@ async function buscarClientes() {
       estoque_clientes: "1",
       senha: senha,
       skus: skus.join(","),
+      modo: modoSelecionado,
     };
     if (canalSelecionado) params.canal = canalSelecionado;
     const data = await chamarBackendJsonp(params);
@@ -412,7 +453,9 @@ async function buscarClientes() {
     clientesResultado = data.clientes || [];
     if (clientesResultado.length === 0) {
       document.getElementById("estado-vazio").style.display = "block";
-      document.getElementById("estado-vazio").textContent = "Nenhum cliente comprou esses itens nos últimos " + (data.janela_dias || 180) + " dias.";
+      document.getElementById("estado-vazio").textContent = modoSelecionado === "nunca_compraram"
+        ? "Nenhum cliente ativo (últimos " + (data.janela_dias || 180) + " dias) está sem comprar algum desses itens — ou todo mundo já compra tudo, ou ninguém ativo bate com o canal escolhido."
+        : "Nenhum cliente comprou esses itens nos últimos " + (data.janela_dias || 180) + " dias.";
     }
     renderizarResultado();
   } catch (err) {
@@ -423,7 +466,12 @@ async function buscarClientes() {
 
 function copiarListaFinal() {
   const visiveis = clientesResultado.filter(c => !removidos.has(c.cnpj));
-  const texto = visiveis.map(c => c.nome + " — " + c.percentual_match + "% (" + c.total_skus_marcados_comprados + "/" + c.total_skus_marcados + ") — " + c.dias_sem_comprar + " dias sem comprar").join("\n");
+  const texto = visiveis.map(c => {
+    if (modoSelecionado === "nunca_compraram") {
+      return c.nome + " — nunca comprou: " + nomesSkus(c.skus_nunca_comprados) + " — " + c.dias_sem_comprar + " dias sem comprar";
+    }
+    return c.nome + " — " + c.percentual_match + "% (" + c.total_skus_marcados_comprados + "/" + c.total_skus_marcados + ") — " + c.dias_sem_comprar + " dias sem comprar";
+  }).join("\n");
   navigator.clipboard.writeText(texto).then(() => {
     const btn = document.getElementById("copiar-btn");
     const original = btn.textContent;
@@ -451,6 +499,7 @@ document.getElementById("copiar-btn").addEventListener("click", copiarListaFinal
 
 montarCatalogo();
 configurarTabsCanal();
+configurarTabsModo();
 
 // Se já tiver senha salva de uma visita anterior, pula a tela de login
 // direto — mesmo padrão dos outros painéis Vitanuts (senha em
