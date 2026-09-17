@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estoque → Clientes Propícios · Vitanuts</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --card: #ffffff;
+    --border: #e0ddd4;
+    --border-strong: #c9c5b8;
+    --text: #1f1e1a;
+    --text-secondary: #6b6a63;
+    --text-muted: #9a988e;
+    --accent: #185fa5;
+    --accent-bg: #e6f1fb;
+    --success: #3b6d11;
+    --success-bg: #eaf3de;
+    --danger: #a32d2d;
+    --danger-bg: #fcebeb;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  #login-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+  }
+  #login-box h1 { font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+  #login-box p { font-size: 13px; color: var(--text-secondary); margin: 0 0 20px; }
+  #login-box input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  #login-box button, .btn-primary {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #login-box button:hover, .btn-primary:hover { opacity: 0.92; }
+  #login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  #app { display: none; max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 18px;
+  }
+  header.top h1 { font-size: 18px; font-weight: 600; margin: 0; }
+  header.top span { font-size: 12px; color: var(--text-muted); }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+
+  #catalogo-lista { display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow-y: auto; padding-right: 4px; }
+  .item-catalogo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .item-catalogo:hover { background: #f7f6f2; }
+  .item-catalogo.marcado { background: var(--accent-bg); border: 1px solid #b5d4f4; }
+  .item-catalogo input { margin: 0; flex-shrink: 0; }
+  .item-catalogo .cod { font-size: 10px; color: var(--text-muted); display: block; }
+
+  #buscar-btn { margin-top: 14px; }
+
+  #resultado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  #resultado-header h2 { margin: 0; }
+  #resultado-header .meta { font-size: 12px; color: var(--text-secondary); }
+
+  .cliente-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .cliente-card.match-100 { border-color: #97c459; background: var(--success-bg); }
+  .cliente-card.removido { opacity: 0.45; }
+  .cliente-card .info { flex: 1; min-width: 0; }
+  .cliente-card .linha1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .cliente-card .nome { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cliente-card .nome.riscado { text-decoration: line-through; }
+  .cliente-card .pct { font-size: 12px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+  .cliente-card.match-100 .pct { color: var(--success); }
+  .cliente-card .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .cliente-card .aviso-parado { color: var(--danger); font-weight: 600; }
+  .cliente-card button {
+    flex-shrink: 0;
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cliente-card button:hover { background: #f7f6f2; }
+
+  #copiar-btn {
+    margin-top: 14px;
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  #copiar-btn:hover { background: #f7f6f2; }
+
+  #estado-vazio, #estado-carregando { font-size: 13px; color: var(--text-muted); padding: 30px 0; text-align: center; }
+  #estado-erro { font-size: 13px; color: var(--danger); padding: 12px; background: var(--danger-bg); border-radius: 8px; display: none; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div id="login-box">
+    <h1>Estoque → Clientes Propícios</h1>
+    <p>Painel restrito da Vitanuts</p>
+    <input type="password" id="senha-input" placeholder="Senha de acesso" autocomplete="off" />
+    <button id="entrar-btn">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <h1>Estoque → Clientes Propícios</h1>
+    <span>janela de 180 dias · Vitanuts</span>
+  </header>
+
+  <div id="estado-erro"></div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Marque os itens parados</h2>
+      <div id="catalogo-lista"></div>
+      <button id="buscar-btn" class="btn-primary">Buscar clientes</button>
+    </div>
+
+    <div class="panel">
+      <div id="resultado-header">
+        <h2>Resultado</h2>
+        <span class="meta" id="resultado-meta"></span>
+      </div>
+      <div id="estado-vazio">Marque um ou mais itens e clique em "Buscar clientes".</div>
+      <div id="estado-carregando" style="display:none;">Buscando...</div>
+      <div id="lista-clientes"></div>
+      <button id="copiar-btn" style="display:none;">Copiar lista final</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// CONFIG — cole aqui a MESMA WEBAPP_URL usada em sexta-feira.html /
+// busca-cliente.html (constante WEBAPP_URL no topo do Code_IA.gs).
+// =====================================================================
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwKXJEG2FBh8uqrFy4HsEPPbJRoCVFJoPWaCZvrfvM9EDbLxGZekueVTVtArScf9yBZ/exec";
+
+// Catálogo fixo — os 20 SKUs reais do print enviado (cód + descrição).
+// value = código normalizado (bate com normalizarSku_ no backend:
+// maiúsculo, sem sufixo _FBA). Se o catálogo de produtos mudar, editar
+// só esta lista — não precisa mexer em mais nada.
+const CATALOGO = [
+  { cod: "BAR004", nome: "Barrinha chocolate 50% 12un" },
+  { cod: "BAR002", nome: "Barrinha choc. branco frutas verm. 12un" },
+  { cod: "BAR003", nome: "Barrinha chocolate duo 12un" },
+  { cod: "BAR001", nome: "Barrinha cookies & cream 12un" },
+  { cod: "BAR005", nome: "Barrinha doce de leite e amêndoas 12un" },
+  { cod: "BAR006", nome: "Barra proteína avelã trufado" },
+  { cod: "AMECHOCOPPJ", nome: "Pasta amendoim choc. crocante 205g" },
+  { cod: "AMECHOCOGPJ", nome: "Pasta amendoim choc. crocante 500g" },
+  { cod: "CROCPPJ", nome: "Pasta castanha de caju 205g" },
+  { cod: "CROCGPJ", nome: "Pasta castanha de caju 500g" },
+  { cod: "BAUNILHAP", nome: "Pasta castanha baunilha crispies 205g" },
+  { cod: "BAUNILHAG", nome: "Pasta castanha baunilha crispies 500g" },
+  { cod: "CHOCOPPJ", nome: "Pasta castanha chocolate 52% 205g" },
+  { cod: "CHOCOGPJ", nome: "Pasta castanha chocolate 52% 500g" },
+  { cod: "SALTEDPPJ", nome: "Pasta choc. branco caramelo salgado 205g" },
+  { cod: "SALTEDGPJ", nome: "Pasta choc. branco caramelo salgado 500g" },
+  { cod: "COCOPPJ", nome: "Pasta castanha coco 205g" },
+  { cod: "COCOGPJ", nome: "Pasta castanha coco 500g" },
+  { cod: "MS-ERMA-2EOB", nome: "Pasta castanha cookies & cream 205g" },
+  { cod: "COOKIEGPJ", nome: "Pasta castanha cookies & cream 500g" },
+  { cod: "PISTACHEPJ", nome: "Pasta de pistache 205g" },
+];
+
+const SENHA_STORAGE_KEY = "vitanuts_estoque_clientes_senha";
+let clientesResultado = []; // resultado cru do backend, nesta rodada
+let removidos = new Set(); // cnpjs removidos nesta rodada (não persiste)
+
+function montarCatalogo() {
+  const container = document.getElementById("catalogo-lista");
+  container.innerHTML = "";
+  CATALOGO.forEach(item => {
+    const label = document.createElement("label");
+    label.className = "item-catalogo";
+    label.innerHTML =
+      '<input type="checkbox" data-cod="' + item.cod + '" />' +
+      '<span>' + item.nome + '<span class="cod">' + item.cod + '</span></span>';
+    const checkbox = label.querySelector("input");
+    checkbox.addEventListener("change", () => {
+      label.classList.toggle("marcado", checkbox.checked);
+    });
+    container.appendChild(label);
+  });
+}
+
+function skusMarcados() {
+  return Array.from(document.querySelectorAll("#catalogo-lista input:checked")).map(el => el.dataset.cod);
+}
+
+function mostrarErro(msg) {
+  const el = document.getElementById("estado-erro");
+  if (!msg) { el.style.display = "none"; el.textContent = ""; return; }
+  el.style.display = "block";
+  el.textContent = msg;
+}
+
+// JSONP — mesmo padrão do resto dos projetos Vitanuts (o Apps Script
+// não manda header CORS pra chamada normal, então as telas hospedadas
+// no GitHub Pages usam callback= pra contornar isso).
+function chamarBackendJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "jsonp_cb_" + Date.now();
+    window[callbackName] = (data) => {
+      resolve(data);
+      delete window[callbackName];
+      script.remove();
+    };
+    const query = Object.keys(params).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
+    const script = document.createElement("script");
+    script.src = WEBAPP_URL + "?" + query + "&callback=" + callbackName;
+    script.onerror = () => { reject(new Error("falha_de_rede")); delete window[callbackName]; script.remove(); };
+    document.body.appendChild(script);
+    setTimeout(() => {
+      if (window[callbackName]) { reject(new Error("tempo_esgotado")); delete window[callbackName]; script.remove(); }
+    }, 30000);
+  });
+}
+
+function renderizarResultado() {
+  const lista = document.getElementById("lista-clientes");
+  const meta = document.getElementById("resultado-meta");
+  const vazio = document.getElementById("estado-vazio");
+  const copiarBtn = document.getElementById("copiar-btn");
+
+  const visiveis = clientesResultado.filter(c => !removidos.has(c.cnpj));
+  const totalRemovidos = removidos.size;
+
+  if (clientesResultado.length === 0) {
+    lista.innerHTML = "";
+    meta.textContent = "";
+    copiarBtn.style.display = "none";
+    return;
+  }
+
+  vazio.style.display = "none";
+  meta.textContent = clientesResultado.length + " cliente(s)" + (totalRemovidos > 0 ? " · " + totalRemovidos + " removido(s)" : "");
+  copiarBtn.style.display = visiveis.length > 0 ? "block" : "none";
+
+  lista.innerHTML = "";
+  clientesResultado.forEach(c => {
+    const foiRemovido = removidos.has(c.cnpj);
+    const card = document.createElement("div");
+    card.className = "cliente-card" + (c.percentual_match >= 100 ? " match-100" : "") + (foiRemovido ? " removido" : "");
+    card.innerHTML =
+      '<div class="info">' +
+        '<div class="linha1">' +
+          '<span class="nome' + (foiRemovido ? " riscado" : "") + '">' + escaparHtml(c.nome) + '</span>' +
+          '<span class="pct">' + c.percentual_match + '% · ' + c.total_skus_marcados_comprados + ' de ' + c.total_skus_marcados + '</span>' +
+        '</div>' +
+        '<div class="sub">' + c.dias_sem_comprar + ' dias sem comprar' +
+          (c.pedido_parado && c.pedido_parado.tem
+            ? ' <span class="aviso-parado">· ' + c.pedido_parado.total + ' pedido(s) parado(s) (' + Object.keys(c.pedido_parado.situacoes).join(", ") + ') — R$ ' + c.pedido_parado.valor.toLocaleString("pt-BR") + '</span>'
+            : '') +
+        '</div>' +
+      '</div>' +
+      '<button data-cnpj="' + c.cnpj + '">' + (foiRemovido ? "Desfazer" : "✕") + '</button>';
+    card.querySelector("button").addEventListener("click", () => {
+      if (removidos.has(c.cnpj)) removidos.delete(c.cnpj);
+      else removidos.add(c.cnpj);
+      renderizarResultado();
+    });
+    lista.appendChild(card);
+  });
+}
+
+function escaparHtml(s) {
+  const div = document.createElement("div");
+  div.textContent = s || "";
+  return div.innerHTML;
+}
+
+async function buscarClientes() {
+  const senha = localStorage.getItem(SENHA_STORAGE_KEY);
+  const skus = skusMarcados();
+  mostrarErro(null);
+
+  if (skus.length === 0) {
+    mostrarErro("Marque pelo menos um item do catálogo antes de buscar.");
+    return;
+  }
+
+  document.getElementById("estado-vazio").style.display = "none";
+  document.getElementById("estado-carregando").style.display = "block";
+  document.getElementById("lista-clientes").innerHTML = "";
+  document.getElementById("copiar-btn").style.display = "none";
+  clientesResultado = [];
+  removidos = new Set();
+
+  try {
+    const data = await chamarBackendJsonp({
+      estoque_clientes: "1",
+      senha: senha,
+      skus: skus.join(","),
+    });
+
+    document.getElementById("estado-carregando").style.display = "none";
+
+    if (data.erro) {
+      mostrarErro(data.mensagem || data.erro);
+      return;
+    }
+
+    clientesResultado = data.clientes || [];
+    if (clientesResultado.length === 0) {
+      document.getElementById("estado-vazio").style.display = "block";
+      document.getElementById("estado-vazio").textContent = "Nenhum cliente comprou esses itens nos últimos " + (data.janela_dias || 180) + " dias.";
+    }
+    renderizarResultado();
+  } catch (err) {
+    document.getElementById("estado-carregando").style.display = "none";
+    mostrarErro("Não consegui buscar agora (" + err.message + "). Tenta de novo em instantes.");
+  }
+}
+
+function copiarListaFinal() {
+  const visiveis = clientesResultado.filter(c => !removidos.has(c.cnpj));
+  const texto = visiveis.map(c => c.nome + " — " + c.percentual_match + "% (" + c.total_skus_marcados_comprados + "/" + c.total_skus_marcados + ") — " + c.dias_sem_comprar + " dias sem comprar").join("\n");
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById("copiar-btn");
+    const original = btn.textContent;
+    btn.textContent = "Copiado!";
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+function tentarEntrar() {
+  const senha = document.getElementById("senha-input").value.trim();
+  if (!senha) return;
+  localStorage.setItem(SENHA_STORAGE_KEY, senha);
+  mostrarApp();
+}
+
+function mostrarApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+document.getElementById("entrar-btn").addEventListener("click", tentarEntrar);
+document.getElementById("senha-input").addEventListener("keydown", (e) => { if (e.key === "Enter") tentarEntrar(); });
+document.getElementById("buscar-btn").addEventListener("click", buscarClientes);
+document.getElementById("copiar-btn").addEventListener("click", copiarListaFinal);
+
+montarCatalogo();
+
+// Se já tiver senha salva de uma visita anterior, pula a tela de login
+// direto — mesmo padrão dos outros painéis Vitanuts (senha em
+// localStorage, não pede de novo toda vez). A senha só é validada de
+// verdade na primeira chamada ao backend (?estoque_clientes=1); se
+// estiver errada, o erro aparece ali, não aqui no login.
+if (localStorage.getItem(SENHA_STORAGE_KEY)) {
+  mostrarApp();
+}
+</script>
+
+</body>
+</html>
