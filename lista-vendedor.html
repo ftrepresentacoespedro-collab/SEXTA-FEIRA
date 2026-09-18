@@ -106,6 +106,7 @@
   .badge.recompra_atrasada { background: var(--warning-wash); color: var(--warning); }
   .badge.queda_ritmo { background: var(--warning-wash); color: var(--warning); }
   .badge.cross_sell { background: var(--blue-wash); color: var(--blue); }
+  .badge.pedido_recorrente_potencial { background: var(--good-wash); color: var(--good); }
 
   /* Classificação por recência (ATIVO/RECUPERAR/CONGELADO/ESQUECIDO,
      adicionada 02/09/2026) — badge separado dos sinais de ação, cor
@@ -126,6 +127,15 @@
 
   .cliente-stats { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
   .cliente-stats span { color: var(--text-muted); }
+
+  /* Bloco de meta (adicionado 18/09/2026) — separado de .cliente-stats
+     (que é sobre histórico) porque é sobre o mês CORRENTE, informação
+     de natureza diferente. Cor muda conforme falta_para_meta: verde
+     quando já bateu (valor <= 0), texto normal quando ainda falta. */
+  .cliente-meta { font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--hairline); }
+  .cliente-meta span { color: var(--text-muted); }
+  .cliente-meta .falta-ok { color: var(--good); font-weight: 600; }
+  .tag-base-meta { font-size: 10px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
 
   .contato-info { font-size: 12px; color: var(--good); background: var(--good-wash); border-radius: 8px; padding: 6px 10px; margin-top: 10px; }
 
@@ -206,6 +216,7 @@ const LABELS_SINAL = {
   recompra_atrasada: "Atrasado pra recomprar",
   queda_ritmo: "Caindo",
   cross_sell: "Cross-sell",
+  pedido_recorrente_potencial: "Pode virar recorrente",
 };
 
 // Classificação por recência (ATIVO/RECUPERAR/CONGELADO/ESQUECIDO,
@@ -213,6 +224,12 @@ const LABELS_SINAL = {
 // cada cliente). Ordem aqui é da mais urgente pra menos urgente, pra
 // os chips de filtro aparecerem nessa ordem.
 const LABELS_CLASSIFICACAO = { ESQUECIDO: "Esquecido", CONGELADO: "Congelado", RECUPERAR: "Recuperar", ATIVO: "Ativo" };
+
+// Rótulo de meta_base_usada (adicionado 18/09/2026) — mostra pro
+// vendedor de onde veio o número da meta daquele cliente específico,
+// sem precisar explicar a regra toda na tela (ver Code_IA.gs,
+// calcularMetasB2B_, pra decisão de negócio completa).
+const LABELS_BASE_META = { media: "meta por média", ultimo_pedido: "meta pelo último pedido", piso: "meta mínima" };
 
 let estadoAtual = null; // último payload da lista
 let filtroSinalAtivo = null; // null = todos
@@ -283,6 +300,13 @@ function formatCompactBRL(valor) {
   if (abs >= 1000000) return sinal + "R$ " + (abs / 1000000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
   if (abs >= 1000) return sinal + "R$ " + (abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mil";
   return sinal + "R$ " + abs.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+// Formata "falta pra meta" — negativo/zero vira "já bateu a meta" em
+// vez de um valor negativo confuso na tela (adicionado 18/09/2026).
+function formatFaltaMeta(valor) {
+  if (valor === null || valor === undefined || isNaN(valor)) return { texto: "—", ok: false };
+  if (valor <= 0) return { texto: "já bateu a meta" + (valor < 0 ? " (+" + formatCompactBRL(-valor) + ")" : ""), ok: true };
+  return { texto: formatCompactBRL(valor), ok: false };
 }
 function formatDataCurta(dataStr) {
   if (!dataStr) return "—";
@@ -412,10 +436,18 @@ function renderTudo() {
   document.getElementById("nome-vendedor").textContent = estadoAtual.vendedor;
   document.getElementById("gerado-em-label").textContent = "carteira: " + estadoAtual.total_clientes_da_carteira + " cliente(s)" + (estadoAtual.modo_master ? " · visão master, todos os vendedores" : "") + " · atualizado " + new Date(estadoAtual.gerado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+  // Chips de meta (adicionados 18/09/2026) — meta_mensal_vendedor já
+  // vem pronta do backend como a SOMA das metas dos clientes desse
+  // vendedor (não é um número atribuído a ele, ver aviso_meta do
+  // payload); em modo_master essa soma bate com o total da empresa.
+  const faltaVendedor = formatFaltaMeta(estadoAtual.falta_para_meta_vendedor);
   document.getElementById("resumo-topo").innerHTML =
     '<div class="resumo-chip"><b>' + estadoAtual.total_clientes_da_carteira + '</b>clientes na carteira</div>' +
     '<div class="resumo-chip"><b>' + estadoAtual.total_com_acao_sugerida + '</b>com ação sugerida</div>' +
-    '<div class="resumo-chip"><b>' + estadoAtual.lista.filter(c => !c.contatado_hoje).length + '</b>ainda por contatar hoje</div>';
+    '<div class="resumo-chip"><b>' + estadoAtual.lista.filter(c => !c.contatado_hoje).length + '</b>ainda por contatar hoje</div>' +
+    '<div class="resumo-chip"><b>' + formatCompactBRL(estadoAtual.meta_mensal_vendedor) + '</b>meta do mês' + (estadoAtual.modo_master ? " (empresa)" : "") + '</div>' +
+    '<div class="resumo-chip"><b>' + formatCompactBRL(estadoAtual.vendido_mes_atual_vendedor) + '</b>vendido no mês</div>' +
+    '<div class="resumo-chip"' + (faltaVendedor.ok ? ' style="color:var(--good);"' : '') + '><b' + (faltaVendedor.ok ? ' style="color:var(--good);"' : '') + '>' + faltaVendedor.texto + '</b>falta pra meta</div>';
 
   // Base pra contar os chips: se um vendedor específico está
   // filtrado (modo master), os números dos chips refletem só a
@@ -542,6 +574,20 @@ function cardClienteHtml(c) {
     : "";
   const idSeguro = c.cnpj.replace(/[^0-9]/g, "");
   const responsavelHtml = c.vendedor_responsavel ? '<div class="cliente-responsavel">Vendedor: ' + escapeHtml(c.vendedor_responsavel) + '</div>' : "";
+  // Bloco de meta (adicionado 18/09/2026) — media_mensal null significa
+  // que o backend não calculou meta pra esse cliente (não deveria
+  // acontecer em uso normal, ver calcularMetasB2B_), então o bloco
+  // inteiro só aparece quando tem dado de verdade.
+  let metaHtml = "";
+  if (c.meta_mensal !== null && c.meta_mensal !== undefined) {
+    const falta = formatFaltaMeta(c.falta_para_meta);
+    const tagBase = c.meta_base_usada ? '<span class="tag-base-meta">' + (LABELS_BASE_META[c.meta_base_usada] || c.meta_base_usada) + '</span>' : "";
+    metaHtml = '<div class="cliente-meta">' +
+      '<span>Meta do mês:</span> ' + formatCompactBRL(c.meta_mensal) + tagBase + ' · ' +
+      '<span>Vendido no mês:</span> ' + formatCompactBRL(c.vendido_mes_atual) + ' · ' +
+      '<span>Falta:</span> <span class="' + (falta.ok ? "falta-ok" : "") + '">' + falta.texto + '</span>' +
+    '</div>';
+  }
   return '<div class="cliente-card' + (c.contatado_hoje ? " contatado" : "") + '">' +
     '<div class="cliente-topo">' +
       '<div><div class="cliente-nome">' + escapeHtml(c.nome) + '</div><div class="cliente-cnpj">' + escapeHtml(c.cnpj) + '</div>' + responsavelHtml + '</div>' +
@@ -553,6 +599,7 @@ function cardClienteHtml(c) {
       '<span>Ticket médio:</span> ' + formatCompactBRL(c.ticket_medio) + ' · ' +
       '<span>Total de compras:</span> ' + c.total_compras_historico +
     '</div>' +
+    metaHtml +
     contatoHtml +
     '<div class="acao-linha">' +
       '<input type="text" id="nota-' + idSeguro + '" placeholder="Nota rápida (opcional)" maxlength="300">' +
