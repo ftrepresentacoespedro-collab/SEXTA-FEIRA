@@ -229,11 +229,28 @@ const LABELS_CLASSIFICACAO = { ESQUECIDO: "Esquecido", CONGELADO: "Congelado", R
 // vendedor de onde veio o número da meta daquele cliente específico,
 // sem precisar explicar a regra toda na tela (ver Code_IA.gs,
 // calcularMetasB2B_, pra decisão de negócio completa).
-const LABELS_BASE_META = { media: "meta por média", ultimo_pedido: "meta pelo último pedido", piso: "meta mínima", inativo_sem_meta: "sem meta — 180+ dias sem comprar" };
+const LABELS_BASE_META = { media: "meta por média", ultimo_pedido: "meta pelo último pedido", piso: "meta mínima", inativo_sem_meta: "sem meta — 180+ dias sem comprar", sem_valor_confiavel: "sem meta — última compra sem valor" };
+
+// Status de meta (adicionado 18/09/2026, pedido explícito do usuário) —
+// classifica cada cliente numa das 4 categorias do filtro novo. IMPORTANTE:
+// cliente sem meta atribuída (mais de 180 dias sem comprar, ver
+// Code_IA.gs/calcularMetasB2B_) NUNCA cai em "batida", mesmo a conta bruta
+// de falta_para_meta dando 0 — é uma categoria própria, checada primeiro,
+// de propósito (pedido explícito do usuário: não confundir "sem meta" com
+// "meta batida").
+const LABELS_STATUS_META = { sem_meta: "Sem meta atribuída", batida: "Meta batida", zerado: "Zerado no mês", faltando: "Falta bater a meta" };
+function statusMetaCliente(c) {
+  if (c.meta_base_usada === "inativo_sem_meta" || c.meta_base_usada === "sem_valor_confiavel") return "sem_meta";
+  if (c.meta_mensal === null || c.meta_mensal === undefined) return "sem_meta";
+  if ((c.vendido_mes_atual || 0) === 0) return "zerado";
+  if ((c.falta_para_meta || 0) <= 0) return "batida";
+  return "faltando";
+}
 
 let estadoAtual = null; // último payload da lista
 let filtroSinalAtivo = null; // null = todos
 let filtroClassificacaoAtivo = null; // null = todos — ver LABELS_CLASSIFICACAO
+let filtroMetaAtivo = null; // null = todos — ver LABELS_STATUS_META/statusMetaCliente
 let filtroVendedorAtivo = null; // null = todos — só é usado em modo_master (ver renderFiltroVendedor)
 let ocultarContatados = true;
 // Desde 02/09/2026 o backend devolve a carteira INTEIRA do vendedor,
@@ -471,6 +488,16 @@ function renderTudo() {
     '<div class="filtro-chip filtro-classif' + (filtroClassificacaoAtivo === k ? ' ativo' : '') + '" data-classif="' + k + '">' + LABELS_CLASSIFICACAO[k] + ' (' + contagemPorClassificacao[k] + ')</div>'
   ).join("");
 
+  // Linha nova: filtro por status de meta (18/09/2026) — mesma ordem de
+  // LABELS_STATUS_META, contagem sobre a mesma base (listaParaContagem)
+  // usada pelos outros filtros, pra respeitar o filtro de vendedor em
+  // modo master.
+  const contagemPorStatusMeta = {};
+  listaParaContagem.forEach(c => { const st = statusMetaCliente(c); contagemPorStatusMeta[st] = (contagemPorStatusMeta[st] || 0) + 1; });
+  const chipsMetaHtml = Object.keys(LABELS_STATUS_META).filter(k => contagemPorStatusMeta[k]).map(k =>
+    '<div class="filtro-chip filtro-meta' + (filtroMetaAtivo === k ? ' ativo' : '') + '" data-meta="' + k + '">' + LABELS_STATUS_META[k] + ' (' + contagemPorStatusMeta[k] + ')</div>'
+  ).join("");
+
   // Linha 3: filtro por vendedor responsável — só existe em modo
   // master (visão de todos os vendedores juntos), porque fora desse
   // modo a carteira já é de um vendedor só (escolhido no login).
@@ -495,6 +522,11 @@ function renderTudo() {
       '<div class="filtro-chip filtro-classif' + (filtroClassificacaoAtivo === null ? ' ativo' : '') + '" data-classif="">Todas</div>' +
       chipsClassificacaoHtml +
     '</div>' +
+    '<div class="filtros-linha">' +
+      '<span class="filtros-label">Meta</span>' +
+      '<div class="filtro-chip filtro-meta' + (filtroMetaAtivo === null ? ' ativo' : '') + '" data-meta="">Todos</div>' +
+      chipsMetaHtml +
+    '</div>' +
     linhaVendedorHtml +
     '<div class="filtros-linha">' +
       '<label class="filtro-toggle" style="margin-left:0;"><input type="checkbox" id="toggle-somente-acao" ' + (somenteComAcao ? "checked" : "") + '> só com ação sugerida</label>' +
@@ -510,6 +542,12 @@ function renderTudo() {
   document.querySelectorAll(".filtro-classif").forEach(el => {
     el.addEventListener("click", () => {
       filtroClassificacaoAtivo = el.getAttribute("data-classif") || null;
+      renderTudo();
+    });
+  });
+  document.querySelectorAll(".filtro-meta").forEach(el => {
+    el.addEventListener("click", () => {
+      filtroMetaAtivo = el.getAttribute("data-meta") || null;
       renderTudo();
     });
   });
@@ -538,6 +576,7 @@ function renderListaFiltrada() {
   if (somenteComAcao) itens = itens.filter(c => c.sinais.length > 0);
   if (filtroSinalAtivo) itens = itens.filter(c => c.sinais.some(s => s.tipo === filtroSinalAtivo));
   if (filtroClassificacaoAtivo) itens = itens.filter(c => c.classificacao_recencia === filtroClassificacaoAtivo);
+  if (filtroMetaAtivo) itens = itens.filter(c => statusMetaCliente(c) === filtroMetaAtivo);
   if (filtroVendedorAtivo) itens = itens.filter(c => c.vendedor_responsavel === filtroVendedorAtivo);
   if (ocultarContatados) itens = itens.filter(c => !c.contatado_hoje);
   if (buscaNome.trim()) {
@@ -580,8 +619,9 @@ function cardClienteHtml(c) {
   // inteiro só aparece quando tem dado de verdade.
   let metaHtml = "";
   if (c.meta_mensal !== null && c.meta_mensal !== undefined) {
-    if (c.meta_base_usada === "inativo_sem_meta") {
-      metaHtml = '<div class="cliente-meta"><span class="tag-base-meta">' + LABELS_BASE_META.inativo_sem_meta + '</span> — sem meta atribuída, o valor foi redistribuído pros outros clientes.</div>';
+    if (statusMetaCliente(c) === "sem_meta") {
+      const rotulo = LABELS_BASE_META[c.meta_base_usada] || "sem meta atribuída";
+      metaHtml = '<div class="cliente-meta"><span class="tag-base-meta">' + rotulo + '</span> — sem meta atribuída, o valor foi redistribuído pros outros clientes.</div>';
     } else {
       const falta = formatFaltaMeta(c.falta_para_meta);
       const tagBase = c.meta_base_usada ? '<span class="tag-base-meta">' + (LABELS_BASE_META[c.meta_base_usada] || c.meta_base_usada) + '</span>' : "";
