@@ -229,7 +229,7 @@ const LABELS_CLASSIFICACAO = { ESQUECIDO: "Esquecido", CONGELADO: "Congelado", R
 // vendedor de onde veio o número da meta daquele cliente específico,
 // sem precisar explicar a regra toda na tela (ver Code_IA.gs,
 // calcularMetasB2B_, pra decisão de negócio completa).
-const LABELS_BASE_META = { media: "meta por média", ultimo_pedido: "meta pelo último pedido", piso: "meta mínima" };
+const LABELS_BASE_META = { media: "meta por média", ultimo_pedido: "meta pelo último pedido", piso: "meta mínima", inativo_sem_meta: "sem meta — 180+ dias sem comprar" };
 
 let estadoAtual = null; // último payload da lista
 let filtroSinalAtivo = null; // null = todos
@@ -580,13 +580,17 @@ function cardClienteHtml(c) {
   // inteiro só aparece quando tem dado de verdade.
   let metaHtml = "";
   if (c.meta_mensal !== null && c.meta_mensal !== undefined) {
-    const falta = formatFaltaMeta(c.falta_para_meta);
-    const tagBase = c.meta_base_usada ? '<span class="tag-base-meta">' + (LABELS_BASE_META[c.meta_base_usada] || c.meta_base_usada) + '</span>' : "";
-    metaHtml = '<div class="cliente-meta">' +
-      '<span>Meta do mês:</span> ' + formatCompactBRL(c.meta_mensal) + tagBase + ' · ' +
-      '<span>Vendido no mês:</span> ' + formatCompactBRL(c.vendido_mes_atual) + ' · ' +
-      '<span>Falta:</span> <span class="' + (falta.ok ? "falta-ok" : "") + '">' + falta.texto + '</span>' +
-    '</div>';
+    if (c.meta_base_usada === "inativo_sem_meta") {
+      metaHtml = '<div class="cliente-meta"><span class="tag-base-meta">' + LABELS_BASE_META.inativo_sem_meta + '</span> — sem meta atribuída, o valor foi redistribuído pros outros clientes.</div>';
+    } else {
+      const falta = formatFaltaMeta(c.falta_para_meta);
+      const tagBase = c.meta_base_usada ? '<span class="tag-base-meta">' + (LABELS_BASE_META[c.meta_base_usada] || c.meta_base_usada) + '</span>' : "";
+      metaHtml = '<div class="cliente-meta">' +
+        '<span>Meta do mês:</span> ' + formatCompactBRL(c.meta_mensal) + tagBase + ' · ' +
+        '<span>Vendido no mês:</span> ' + formatCompactBRL(c.vendido_mes_atual) + ' · ' +
+        '<span>Falta:</span> <span class="' + (falta.ok ? "falta-ok" : "") + '">' + falta.texto + '</span>' +
+      '</div>';
+    }
   }
   return '<div class="cliente-card' + (c.contatado_hoje ? " contatado" : "") + '">' +
     '<div class="cliente-topo">' +
