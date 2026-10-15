@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metas — Vitanuts</title>
+<style>
+:root{--bg:#0e0e10;--card:#17171a;--card2:#1e1e22;--line:#2a2a30;--tx:#f2f2f3;--tx2:#a0a0a8;--tx3:#6b6b73;--ac:#3b82f6;--acbg:#16294a;--ok:#34d399;--okbg:#10291f;--warn:#fbbf24;--warnbg:#33290d;--bad:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:20px;font-weight:600;margin:0}
+h3{font-size:14px;font-weight:600;margin:22px 0 8px}
+.sub{color:var(--tx2);font-size:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.btn{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+.btn:hover{border-color:#44444c}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.x{padding:1px 8px;font-size:15px;line-height:1.3;color:var(--tx3)}
+.btn.x:hover{color:var(--bad)}
+.gr{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 12px}
+.mc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.mc small{display:block;font-size:12px;color:var(--tx2)}
+.mc b{font-weight:600;font-size:20px}
+.mc .gap{font-size:12px;margin-top:2px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:16px 0 14px;flex-wrap:wrap}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--tx2);padding:8px 12px;font-size:14px;cursor:pointer}
+.tab.on{color:var(--tx);border-bottom-color:var(--ac)}
+.panel{display:none}.panel.on{display:block}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-weight:400;color:var(--tx2);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+th:first-child,td:first-child{text-align:left}
+.tl{text-align:left}
+input,select{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--ac)}
+input.in{width:92px;text-align:right}
+input.big{width:120px;font-size:17px;font-weight:600;padding:4px 8px}
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.ctl input[type=text]{min-width:220px}
+.bar{height:6px;background:var(--card2);border-radius:3px;position:relative;min-width:80px}
+.bar i{position:absolute;left:0;top:0;height:6px;border-radius:3px}
+.tg{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--tx2)}
+.tg.pa{background:var(--acbg);color:#8db8ff}
+.tg.w{background:var(--warnbg);color:var(--warn);margin-left:6px}
+.tg.o{background:var(--okbg);color:var(--ok);margin-left:6px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mut{color:var(--tx3)}
+.nota{font-size:12px;color:var(--tx2);margin:10px 0 0;line-height:1.5}
+.alert{background:var(--warnbg);border:1px solid #5c4a14;color:var(--warn);border-radius:8px;padding:8px 12px;font-size:13px;margin:0 0 10px}
+.err{background:#2d1517;border:1px solid #5b2327;color:var(--bad);border-radius:8px;padding:10px 12px;margin:12px 0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px}
+details summary{cursor:pointer;color:var(--tx2);font-size:13px}
+.form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+#login{max-width:340px;margin:18vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+#login input{width:100%;margin:12px 0}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#26262b;border:1px solid var(--line);padding:8px 16px;border-radius:10px;font-size:13px;display:none;z-index:9}
+.load{color:var(--tx2);padding:30px 0;text-align:center}
+@media(max-width:640px){.wrap{padding:14px 10px 50px}td,th{padding:6px 4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="login" style="display:none">
+  <h1>Metas</h1>
+  <div class="sub">Vitanuts — acompanhamento de metas</div>
+  <input id="senha" type="password" placeholder="Senha" autocomplete="current-password">
+  <button class="btn pri" id="entrar" style="width:100%">Entrar</button>
+  <div id="loginerr" class="bad" style="font-size:12px;margin-top:8px"></div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="top">
+    <div>
+      <h1 id="titulo">Metas</h1>
+      <div class="sub" id="atualizado"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="atualizar">Atualizar</button>
+      <button class="btn" id="sair">Sair</button>
+    </div>
+  </div>
+
+  <div id="erro"></div>
+  <div class="gr" id="empresa"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-aba="b2b">B2B · metas</button>
+    <button class="tab" data-aba="ag">Aguardando faturamento</button>
+    <button class="tab" data-aba="rec">A recuperar · oportunidade</button>
+    <button class="tab" data-aba="b2c">B2C · meta geral</button>
+  </div>
+
+  <div id="carregando" class="load">Carregando…</div>
+
+  <div id="p-b2b" class="panel">
+    <div class="gr">
+      <div class="mc"><small>Meta B2B do mês</small><input id="in-b2b-total" class="in big" type="number" min="0" step="1000"></div>
+      <div class="mc"><small>Faturado (notas, só CNPJ)</small><b id="c-b2b-fat"></b></div>
+      <div class="mc"><small>Falta pra meta</small><b id="c-b2b-falta"></b></div>
+      <div class="mc"><small>Soma das metas dos clientes</small><b id="c-b2b-soma"></b><div class="gap" id="c-b2b-gap"></div></div>
+    </div>
+    <div id="b2b-pend"></div>
+    <div class="ctl">
+      <input type="text" id="q-b2b" placeholder="Buscar cliente…">
+      <label class="sub"><input type="checkbox" id="so-falta"> só quem ainda falta</label>
+      <span class="sub" id="b2b-cont"></span>
+    </div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Meta</th><th>Faturado NF</th><th>Falta</th><th class="tl" style="width:110px">Andamento</th><th></th></tr></thead>
+      <tbody id="b2b-body"></tbody>
+    </table>
+    <details class="box" id="add-box">
+      <summary>Adicionar cliente à lista de metas</summary>
+      <div class="form">
+        <input type="text" id="add-cnpj" placeholder="CNPJ (14 dígitos) ou raiz (8)" style="width:210px">
+        <input type="text" id="add-nome" placeholder="Nome (opcional)" style="width:200px">
+        <input type="number" id="add-meta" class="in" placeholder="Meta" min="0" step="100">
+        <label class="sub"><input type="checkbox" id="add-exc" checked> exceção (fora da regra dos 4 meses)</label>
+        <button class="btn pri sm" id="add-ok">Adicionar</button>
+      </div>
+    </details>
+    <h3>Faturado por clientes fora da lista de metas</h3>
+    <table>
+      <thead><tr><th>Cliente</th><th>Faturado NF</th><th class="tl">Situação</th></tr></thead>
+      <tbody id="b2b-fora"></tbody>
+    </table>
+    <p class="nota" id="b2b-nota"></p>
+  </div>
+
+  <div id="p-ag" class="panel">
+    <div class="ctl">
+      <span class="sub">Janela</span>
+      <select id="f-jan"><option value="100">100 dias</option><option value="150">150 dias</option><option value="180">180 dias</option></select>
+      <span class="sub">Canal</span>
+      <select id="f-canal"><option value="">Todos</option><option>B2B</option><option>B2C</option></select>
+      <span class="sub">Situação</span>
+      <select id="f-sit"><option value="">Todas</option><option>Em aberto</option><option>Em digitação</option></select>
+    </div>
+    <div class="gr">
+      <div class="mc"><small>Aguardando faturamento</small><b id="a-tot"></b></div>
+      <div class="mc"><small>Pedidos</small><b id="a-qtd"></b></div>
+      <div class="mc"><small>Em aberto</small><b id="a-ab"></b></div>
+      <div class="mc"><small>Em digitação</small><b id="a-dig"></b></div>
+      <div class="mc"><small>B2B: cobre da falta pra meta</small><b id="a-cob"></b></div>
+    </div>
+    <table>
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Canal</th><th>Data</th><th>Valor</th><th>Situação</th><th>Dias</th></tr></thead>
+      <tbody id="a-body"></tbody>
+    </table>
+    <p class="nota">Pedido em aberto e em digitação contam igual como carteira. Mais antigos primeiro; dias em amarelo a partir de 30. Quando o pedido vira nota fiscal, sai desta aba e passa a abater a meta do cliente.</p>
+  </div>
+
+  <div id="p-rec" class="panel">
+    <div class="gr">
+      <div class="mc"><small>Clientes a recuperar</small><b id="r-qtd"></b></div>
+      <div class="mc"><small>Potencial somado (melhor mês)</small><b id="r-pot"></b></div>
+      <div class="mc"><small>Recuperados no mês</small><b id="r-rec" class="ok"></b></div>
+    </div>
+    <div id="r-recup"></div>
+    <div class="ctl"><input type="text" id="q-rec" placeholder="Buscar cliente…"><span class="sub" id="r-cont"></span></div>
+    <table>
+      <thead><tr><th>Cliente</th><th>Última compra</th><th>Dias sem comprar</th><th>Melhor mês</th><th class="tl">Contato</th></tr></thead>
+      <tbody id="r-body"></tbody>
+    </table>
+    <div style="text-align:center;margin-top:10px"><button class="btn sm" id="r-mais" style="display:none">Mostrar mais</button></div>
+    <p class="nota" id="r-nota"></p>
+  </div>
+
+  <div id="p-b2c" class="panel">
+    <div class="gr">
+      <div class="mc"><small>Meta B2C do mês</small><input id="in-b2c-total" class="in big" type="number" min="0" step="1000"></div>
+      <div class="mc"><small>Faturado</small><b id="c-b2c-fat"></b></div>
+      <div class="mc"><small>Entrada de pedido</small><b id="c-b2c-ent"></b></div>
+      <div class="mc"><small>Falta (faturado)</small><b id="c-b2c-falta"></b></div>
+    </div>
+    <div class="bar" style="height:10px;border-radius:5px"><i id="o-ped" style="height:10px;border-radius:5px;background:var(--acbg);border:1px solid #2c4a80;"></i><i id="o-fat" style="height:10px;border-radius:5px;background:var(--ac)"></i></div>
+    <p class="sub" id="o-txt" style="margin:4px 0 14px"></p>
+    <table>
+      <thead><tr><th>Plataforma</th><th>Faturado por</th><th>Faturado</th><th>Entrada de pedido</th><th>% da meta</th><th class="tl" style="width:100px"></th></tr></thead>
+      <tbody id="b2c-body"></tbody>
+    </table>
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><div class="sub">Conferência Shopee</div><div id="conf-txt"></div></div>
+        <button class="btn sm" id="bt-fulf">Ver pedidos Fulfillment</button>
+      </div>
+      <div id="conf-alert"></div>
+      <div id="fulf-box" style="display:none;margin-top:10px">
+        <table>
+          <thead><tr><th>Pedido</th><th>Data</th><th>Valor</th><th></th></tr></thead>
+          <tbody id="fulf-body"></tbody>
+        </table>
+        <p class="nota" id="fulf-nota"></p>
+      </div>
+    </div>
+    <p class="nota">Uma meta só: toda venda de qualquer plataforma conta pra ela. Shopee Fulfillment conta pedido Atendido no mês sem nota fiscal vinculada; as demais plataformas, inclusive a Shopee normal e a Amazon FBA, contam nota fiscal. Entrada de pedido = pedidos do mês, menos os cancelados.</p>
+  </div>
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxy0qPTTnWNajuHXvjntT-JnIqVtPQPBJKnCUDhZc88L45LVR4nwtK6fb1NsrQR8V0lgA/exec";
+
+const $ = (s) => document.querySelector(s);
+const R = (n) => "R$ " + Math.round(Number(n) || 0).toLocaleString("pt-BR");
+const P = (n) => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString("pt-BR") + "%";
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const fd = (iso) => (iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "");
+const fdl = (iso) => (iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : "");
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+const S = { senha: "", d: null, aba: "b2b", janela: 100, recMostrar: 100 };
+let toastTimer = null;
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 3500);
+}
+
+function lerSenha() { try { return localStorage.getItem("metas_senha") || ""; } catch (e) { return ""; } }
+function gravarSenha(v) { try { if (v) localStorage.setItem("metas_senha", v); else localStorage.removeItem("metas_senha"); } catch (e) { /* sem storage, segue */ } }
+
+async function api(corpo, timeoutMs) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 120000);
+  try {
+    const r = await fetch(WEBAPP_URL, { method: "POST", body: JSON.stringify(Object.assign({ senha: S.senha }, corpo)), signal: ctrl.signal });
+    return await r.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function mostrarLogin(msg) {
+  $("#app").style.display = "none";
+  $("#login").style.display = "block";
+  $("#loginerr").textContent = msg || "";
+  $("#senha").focus();
+}
+
+async function carregar() {
+  $("#carregando").style.display = "block";
+  $("#erro").innerHTML = "";
+  try {
+    const d = await api({ acao: "carregar", janela: S.janela });
+    if (d.erro === "senha_incorreta") { gravarSenha(""); S.senha = ""; mostrarLogin("Senha incorreta."); return; }
+    if (d.erro) throw new Error(d.mensagem || d.erro + (d.detalhe ? ": " + d.detalhe : ""));
+    S.d = d;
+    $("#login").style.display = "none";
+    $("#app").style.display = "block";
+    renderTudo();
+  } catch (e) {
+    $("#login").style.display = "none";
+    $("#app").style.display = "block";
+    $("#erro").innerHTML = '<div class="err">Não consegui carregar os dados (' + esc(e.message || e) + '). Confira se a nova versão do Apps Script foi implantada e tente atualizar.</div>';
+  } finally {
+    $("#carregando").style.display = "none";
+  }
+}
+
+// ---------- render ----------
+
+function renderTudo() {
+  const d = S.d;
+  const p = d.mes.split("-");
+  $("#titulo").textContent = "Metas · " + MESES[Number(p[1]) - 1] + "/" + p[0];
+  const hora = new Date(d.atualizado_em);
+  $("#atualizado").textContent = "Atualizado às " + hora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " · faturado = nota fiscal";
+  $("#f-jan").value = String(d.aguardando.janela_dias);
+  renderEmpresa();
+  renderB2B();
+  renderAguardando();
+  renderRecuperar();
+  renderB2C();
+  mostrarAba(S.aba);
+}
+
+function renderEmpresa() {
+  const e = S.d.empresa;
+  const pct = e.meta_total > 0 ? (e.faturado_total / e.meta_total) * 100 : 0;
+  $("#empresa").innerHTML =
+    '<div class="mc"><small>Meta da empresa</small><b>' + R(e.meta_total) + "</b></div>" +
+    '<div class="mc"><small>Faturado (B2B + B2C)</small><b>' + R(e.faturado_total) + "</b></div>" +
+    '<div class="mc"><small>Atingido</small><b>' + P(pct) + "</b></div>" +
+    '<div class="mc"><small>B2B / B2C faturado</small><b style="font-size:15px">' + R(e.b2b_faturado) + " / " + R(e.b2c_faturado) + "</b></div>";
+}
+
+function faltaHtml(c) {
+  if (c.meta === 0) return '<span class="mut">sem meta</span>';
+  if (c.faturado >= c.meta) return '<span class="ok">bateu +' + R(c.faturado - c.meta) + "</span>";
+  return R(c.meta - c.faturado);
+}
+
+function barraB2B(c) {
+  if (c.meta === 0) return '<div class="bar"><i style="width:0"></i></div>';
+  const pct = Math.min(100, (c.faturado / c.meta) * 100);
+  const cor = c.faturado >= c.meta ? "var(--ok)" : "var(--ac)";
+  return '<div class="bar"><i style="width:' + pct + "%;background:" + cor + '"></i></div>';
+}
+
+function linhaB2B(c) {
+  const badges = (c.excecao ? '<span class="tg w">exceção</span>' : "") + (c.cnpj_pendente ? '<span class="tg w">CNPJ pendente</span>' : "");
+  return '<tr data-raiz="' + esc(c.raiz) + '"><td>' + esc(c.nome) + badges + '</td>' +
+    '<td><input class="in meta-cli" type="number" min="0" step="50" value="' + Math.round(c.meta * 100) / 100 + '" data-raiz="' + esc(c.raiz) + '"></td>' +
+    "<td>" + R(c.faturado) + '</td><td class="f-falta">' + faltaHtml(c) + '</td><td class="tl f-bar">' + barraB2B(c) + "</td>" +
+    '<td><button class="btn x rm-cli" data-raiz="' + esc(c.raiz) + '" title="Remover da lista">×</button></td></tr>';
+}
+
+function renderB2B() {
+  const b = S.d.b2b;
+  $("#in-b2b-total").value = b.meta_total;
+  atualizarCardsB2B();
+  $("#b2b-pend").innerHTML = b.pendencias.map((t) => '<div class="alert">' + esc(t) + "</div>").join("");
+  renderLinhasB2B();
+  $("#b2b-fora").innerHTML = b.fora_da_lista.length
+    ? b.fora_da_lista.map((c) => "<tr><td>" + esc(c.nome) + "</td><td>" + R(c.valor) + '</td><td class="tl">' +
+        (c.recuperado ? '<span class="tg o">recuperado</span>' : c.novo ? '<span class="tg w">sem histórico</span>' : '<span class="tg">fora da regra dos 4 meses</span>') + "</td></tr>").join("")
+    : '<tr><td colspan="3" class="mut">Nenhuma venda fora da lista neste mês.</td></tr>';
+  $("#b2b-nota").textContent =
+    "Cliente sem meta ou fora da lista que faturar entra no faturado da empresa, mas não abate meta de cliente. " +
+    (b.faturado_cpf_nao_conta > 0 ? "Vendas B2B para CPF (" + R(b.faturado_cpf_nao_conta) + ") não entram, igual à planilha. " : "") +
+    "A meta de cada cliente vale para " + MESES[Number(S.d.mes.split("-")[1]) - 1] + "; no mês seguinte a lista é copiada e você ajusta.";
+}
+
+function renderLinhasB2B() {
+  const q = norm($("#q-b2b").value);
+  const so = $("#so-falta").checked;
+  const lista = S.d.b2b.clientes.filter((c) => (!q || norm(c.nome).indexOf(q) !== -1) && (!so || (c.meta > 0 && c.faturado < c.meta)));
+  $("#b2b-body").innerHTML = lista.map(linhaB2B).join("") || '<tr><td colspan="6" class="mut">Nenhum cliente com esse filtro.</td></tr>';
+  $("#b2b-cont").textContent = lista.length + " de " + S.d.b2b.clientes.length + " clientes";
+}
+
+function atualizarCardsB2B() {
+  const b = S.d.b2b;
+  $("#c-b2b-fat").textContent = R(b.faturado_total);
+  $("#c-b2b-falta").textContent = R(b.falta_meta_empresa);
+  $("#c-b2b-soma").textContent = R(b.soma_metas_clientes);
+  const g = b.sem_cliente_atribuido;
+  const el = $("#c-b2b-gap");
+  el.textContent = g > 0.5 ? R(g) + " sem cliente atribuído" : g < -0.5 ? R(-g) + " acima da meta B2B" : "fecha com a meta B2B";
+  el.className = "gap " + (g > 0.5 ? "warn" : "mut");
+}
+
+function recalcB2B() {
+  const b = S.d.b2b;
+  b.clientes.forEach((c) => {
+    c.falta = Math.max(0, c.meta - c.faturado);
+    c.excedente = Math.max(0, c.faturado - c.meta);
+  });
+  b.soma_metas_clientes = b.clientes.reduce((s, c) => s + c.meta, 0);
+  b.sem_cliente_atribuido = b.meta_total - b.soma_metas_clientes;
+  b.falta_meta_empresa = Math.max(0, b.meta_total - b.faturado_total);
+  atualizarCardsB2B();
+  renderAguardandoCards();
+}
+
+function renderAguardandoCards() {
+  const a = S.d.aguardando, sit = $("#f-sit").value, canal = $("#f-canal").value;
+  let tot = 0, qtd = 0, ab = 0, dig = 0, b2b = 0;
+  a.pedidos.forEach((p) => {
+    if (sit && p.situacao !== sit) return;
+    if (p.canal === "B2B") b2b += p.valor;
+    if (canal && p.canal !== canal) return;
+    tot += p.valor; qtd++;
+    if (p.situacao === "Em aberto") ab += p.valor; else dig += p.valor;
+  });
+  $("#a-tot").textContent = R(tot);
+  $("#a-qtd").textContent = qtd;
+  $("#a-ab").textContent = R(ab);
+  $("#a-dig").textContent = R(dig);
+  const falta = S.d.b2b.falta_meta_empresa;
+  $("#a-cob").textContent = falta > 0 ? Math.round((b2b / falta) * 100) + "%" : "—";
+}
+
+function renderAguardando() {
+  const a = S.d.aguardando, sit = $("#f-sit").value, canal = $("#f-canal").value;
+  const linhas = a.pedidos.filter((p) => (!sit || p.situacao === sit) && (!canal || p.canal === canal)).map((p) => {
+    const bg = p.situacao === "Em aberto" ? "tg pa" : "tg w";
+    return "<tr><td>" + esc(p.numero) + "</td><td>" + esc(p.cliente) + "</td><td>" + esc(p.canal) + "</td><td>" + fd(p.data) + "</td><td>" + R(p.valor) +
+      '</td><td><span class="' + bg + '" style="margin-left:0">' + esc(p.situacao) + '</span></td><td class="' + (p.dias >= 30 ? "warn" : "") + '">' + p.dias + "</td></tr>";
+  });
+  $("#a-body").innerHTML = linhas.join("") || '<tr><td colspan="7" class="mut" style="text-align:center;padding:16px">Nenhum pedido com esse filtro.</td></tr>';
+  renderAguardandoCards();
+}
+
+function contatoHtml(c) {
+  const txt = c.contato ? '<span class="sub">' + fd(c.contato.data) + (c.contato.nota ? ": " + esc(c.contato.nota) : "") + "</span> " : "";
+  return txt + '<button class="btn sm reg-cont" data-raiz="' + esc(c.raiz) + '">' + (c.contato ? "Novo contato" : "Registrar contato") + "</button>";
+}
+
+function renderRecuperar() {
+  const r = S.d.recuperar;
+  $("#r-qtd").textContent = r.total_clientes;
+  $("#r-pot").textContent = R(r.potencial_total);
+  $("#r-rec").textContent = r.recuperados_no_mes.length;
+  $("#r-recup").innerHTML = r.recuperados_no_mes.length
+    ? '<div class="box" style="margin:0 0 12px"><div class="sub" style="margin-bottom:6px">Recuperados neste mês (faturaram e saíram da lista)</div>' +
+      r.recuperados_no_mes.map((c) => "<div>" + esc(c.nome) + ' <span class="ok">' + R(c.valor) + "</span></div>").join("") + "</div>"
+    : "";
+  renderLinhasRecuperar();
+  $("#r-nota").textContent = "Clientes que já compraram (pedido atendido B2B, só CNPJ), não compraram nos últimos 4 meses e não estão na lista de metas. Melhor mês = maior faturamento mensal em pedidos atendidos no histórico. A lista mostra até 500 clientes, do maior potencial para o menor.";
+}
+
+function renderLinhasRecuperar() {
+  const q = norm($("#q-rec").value);
+  const todos = S.d.recuperar.clientes.filter((c) => !q || norm(c.nome).indexOf(q) !== -1);
+  const lista = todos.slice(0, S.recMostrar);
+  $("#r-body").innerHTML = lista.map((c) =>
+    "<tr><td>" + esc(c.nome) + "</td><td>" + fdl(c.ultima_compra) + "</td><td>" + c.dias_sem_comprar + "</td><td>" + R(c.melhor_mes) + '</td><td class="tl">' + contatoHtml(c) + "</td></tr>"
+  ).join("") || '<tr><td colspan="5" class="mut" style="text-align:center;padding:16px">Nenhum cliente com esse filtro.</td></tr>';
+  $("#r-cont").textContent = "mostrando " + lista.length + " de " + todos.length;
+  $("#r-mais").style.display = todos.length > lista.length ? "inline-block" : "none";
+}
+
+function renderB2C() {
+  const c = S.d.b2c;
+  $("#in-b2c-total").value = c.meta_total;
+  atualizarB2C();
+  const conf = c.shopee_conferencia;
+  $("#conf-txt").innerHTML = conf.atendidos + " pedidos Shopee atendidos = " + conf.com_nota + " com nota + " + conf.fulfillment + " Fulfillment" +
+    (conf.excecoes ? " + " + conf.excecoes + " exceção(ões)" : "") + (conf.a_classificar ? " + " + conf.a_classificar + " a classificar" : "") +
+    (conf.fecha ? ' <span class="ok">· fecha</span>' : ' <span class="warn">· não fecha ainda</span>');
+  $("#conf-alert").innerHTML = conf.a_classificar
+    ? '<div class="alert" style="margin:10px 0 0">' + conf.a_classificar + " pedido(s) Shopee atendido(s) ainda estão sendo classificados (atualiza a cada 15 min). Até lá não contam como faturado.</div>"
+    : "";
+  $("#fulf-body").innerHTML = c.fulfillment_lista.map((f) =>
+    "<tr><td>" + esc(f.numero) + "</td><td>" + fd(f.data) + "</td><td>" + R(f.valor) + '</td><td><button class="btn sm exc-fulf" data-pid="' + esc(f.id) + '">não é Fulfillment</button></td></tr>'
+  ).join("") || '<tr><td colspan="4" class="mut">Nenhum pedido Fulfillment neste mês.</td></tr>';
+  $("#fulf-nota").textContent = conf.fulfillment > c.fulfillment_lista.length
+    ? "Mostrando os " + c.fulfillment_lista.length + " mais recentes de " + conf.fulfillment + "."
+    : "Total: " + conf.fulfillment + " pedido(s). Compare alguns com o Bling antes de confiar nos totais.";
+}
+
+function atualizarB2C() {
+  const c = S.d.b2c, meta = c.meta_total;
+  const falta = Math.max(0, meta - c.faturado_total);
+  c.falta = falta;
+  $("#c-b2c-fat").textContent = R(c.faturado_total);
+  $("#c-b2c-ent").textContent = R(c.entrada_total);
+  $("#c-b2c-falta").textContent = c.faturado_total >= meta && meta > 0 ? "bateu" : R(falta);
+  const pf = meta > 0 ? Math.min(100, (c.faturado_total / meta) * 100) : 0;
+  const pp = meta > 0 ? Math.min(100, (c.entrada_total / meta) * 100) : 0;
+  $("#o-fat").style.width = pf + "%";
+  $("#o-ped").style.width = pp + "%";
+  $("#o-txt").textContent = P(pf) + " faturado · " + P(pp) + " com entrada de pedido";
+  $("#b2c-body").innerHTML = c.plataformas.map((l) => {
+    const pl = meta > 0 ? (l.faturado / meta) * 100 : 0;
+    const pe = meta > 0 ? (l.entrada / meta) * 100 : 0;
+    return "<tr><td>" + esc(l.plataforma) + '</td><td><span class="tg' + (l.base === "nota" ? "" : " pa") + '">' + esc(l.base) + "</span></td><td>" + R(l.faturado) + "</td><td>" + R(l.entrada) + "</td><td>" + (meta > 0 ? P(pl) : "—") +
+      '</td><td class="tl"><div class="bar"><i style="width:' + Math.min(100, pe) + '%;background:var(--acbg);border:1px solid #2c4a80;box-sizing:border-box"></i><i style="width:' + Math.min(100, pl) + '%;background:var(--ac)"></i></div></td></tr>';
+  }).join("");
+  const e = S.d.empresa;
+  e.b2c_faturado = c.faturado_total;
+  e.meta_total = S.d.b2b.meta_total + meta;
+  e.faturado_total = S.d.b2b.faturado_total + c.faturado_total;
+  renderEmpresa();
+}
+
+function mostrarAba(a) {
+  S.aba = a;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.aba === a));
+  ["b2b", "ag", "rec", "b2c"].forEach((k) => $("#p-" + k).classList.toggle("on", k === a));
+}
+
+// ---------- ações ----------
+
+async function salvarMetaCliente(input) {
+  const raiz = input.dataset.raiz;
+  const c = S.d.b2b.clientes.find((x) => x.raiz === raiz);
+  if (!c) return;
+  const v = Number(input.value);
+  if (input.value === "" || isNaN(v) || v < 0) { input.value = c.meta; toast("Valor de meta inválido."); return; }
+  const antes = c.meta;
+  c.meta = v;
+  recalcB2B();
+  atualizarLinhaB2B(input.closest("tr"), c);
+  try {
+    const r = await api({ acao: "salvar_meta_cliente", raiz: raiz, meta: v }, 40000);
+    if (r.erro) throw new Error(r.mensagem || r.erro);
+    toast("Meta salva.");
+  } catch (e) {
+    c.meta = antes;
+    input.value = antes;
+    recalcB2B();
+    atualizarLinhaB2B(input.closest("tr"), c);
+    toast("Não consegui salvar: " + (e.message || e));
+  }
+}
+
+function atualizarLinhaB2B(tr, c) {
+  if (!tr) return;
+  tr.querySelector(".f-falta").innerHTML = faltaHtml(c);
+  tr.querySelector(".f-bar").innerHTML = barraB2B(c);
+}
+
+async function salvarTotal(campo, input) {
+  const v = Number(input.value);
+  const d = S.d;
+  const atual = campo === "b2b_total" ? d.b2b.meta_total : d.b2c.meta_total;
+  if (input.value === "" || isNaN(v) || v < 0) { input.value = atual; toast("Valor inválido."); return; }
+  try {
+    const corpo = { acao: "salvar_totais" };
+    corpo[campo] = v;
+    const r = await api(corpo, 40000);
+    if (r.erro) throw new Error(r.mensagem || r.erro);
+    if (campo === "b2b_total") { d.b2b.meta_total = v; recalcB2B(); atualizarB2C(); }
+    else { d.b2c.meta_total = v; atualizarB2C(); }
+    toast("Meta salva.");
+  } catch (e) {
+    input.value = atual;
+    toast("Não consegui salvar: " + (e.message || e));
+  }
+}
+
+async function acaoComRecarga(corpo, msgOk) {
+  try {
+    const r = await api(corpo, 60000);
+    if (r.erro) { toast(r.mensagem || r.erro); return false; }
+    if (msgOk) toast(msgOk);
+    await carregar();
+    return true;
+  } catch (e) {
+    toast("Não consegui concluir: " + (e.message || e));
+    return false;
+  }
+}
+
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.classList.contains("meta-cli")) salvarMetaCliente(t);
+  else if (t.id === "in-b2b-total") salvarTotal("b2b_total", t);
+  else if (t.id === "in-b2c-total") salvarTotal("b2c_total", t);
+  else if (t.id === "f-jan") { S.janela = Number(t.value); carregar(); }
+  else if (t.id === "f-canal" || t.id === "f-sit") renderAguardando();
+  else if (t.id === "so-falta") renderLinhasB2B();
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "q-b2b") renderLinhasB2B();
+  else if (e.target.id === "q-rec") { S.recMostrar = 100; renderLinhasRecuperar(); }
+});
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.classList.contains("tab")) { mostrarAba(t.dataset.aba); return; }
+  if (t.classList.contains("rm-cli")) {
+    const c = S.d.b2b.clientes.find((x) => x.raiz === t.dataset.raiz);
+    if (c && confirm("Remover " + c.nome + " da lista de metas deste mês?")) acaoComRecarga({ acao: "remover_cliente", raiz: t.dataset.raiz }, "Cliente removido.");
+    return;
+  }
+  if (t.classList.contains("reg-cont")) {
+    const nota = prompt("Anotação do contato (opcional):", "");
+    if (nota === null) return;
+    const r = await api({ acao: "registrar_contato", raiz: t.dataset.raiz, nota: nota }, 40000).catch(() => ({ erro: "falha de rede" }));
+    if (r.erro) { toast(r.mensagem || r.erro); return; }
+    const c = S.d.recuperar.clientes.find((x) => x.raiz === t.dataset.raiz);
+    if (c) c.contato = r.contato;
+    renderLinhasRecuperar();
+    toast("Contato registrado.");
+    return;
+  }
+  if (t.classList.contains("exc-fulf")) {
+    if (confirm("Marcar este pedido como NÃO Fulfillment? Ele deixa de contar como faturado.")) acaoComRecarga({ acao: "excecao_fulfillment", pedido_id: t.dataset.pid, marcar: true }, "Exceção salva.");
+    return;
+  }
+  if (t.id === "r-mais") { S.recMostrar += 100; renderLinhasRecuperar(); return; }
+  if (t.id === "bt-fulf") {
+    const box = $("#fulf-box");
+    const aberto = box.style.display === "block";
+    box.style.display = aberto ? "none" : "block";
+    t.textContent = aberto ? "Ver pedidos Fulfillment" : "Ocultar pedidos Fulfillment";
+    return;
+  }
+  if (t.id === "add-ok") {
+    const corpo = { acao: "adicionar_cliente", cnpj: $("#add-cnpj").value, nome: $("#add-nome").value, meta: Number($("#add-meta").value || 0), excecao: $("#add-exc").checked };
+    if (await acaoComRecarga(corpo, "Cliente adicionado.")) { $("#add-cnpj").value = ""; $("#add-nome").value = ""; $("#add-meta").value = ""; $("#add-box").open = false; }
+    return;
+  }
+  if (t.id === "atualizar") { carregar(); return; }
+  if (t.id === "sair") { gravarSenha(""); S.senha = ""; S.d = null; mostrarLogin(""); return; }
+  if (t.id === "entrar") { entrar(); }
+});
+
+$("#senha").addEventListener("keydown", (e) => { if (e.key === "Enter") entrar(); });
+
+function entrar() {
+  const v = $("#senha").value.trim();
+  if (!v) return;
+  S.senha = v;
+  gravarSenha(v);
+  $("#senha").value = "";
+  carregar();
+}
+
+(function iniciar() {
+  S.senha = lerSenha();
+  if (S.senha) carregar(); else mostrarLogin("");
+})();
+</script>
+</body>
+</html>
