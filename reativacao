@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reativação Site — Vitanuts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#07080b; --bg-glow:radial-gradient(circle at 15% -10%, rgba(124,108,255,.10), transparent 45%), radial-gradient(circle at 85% 0%, rgba(79,140,255,.06), transparent 40%);
+    --card:#101116; --borda:#1e1f28; --texto:#ced0dc; --muted:#82869b; --acento:#7c6cff; --acento2:#4f8cff;
+    --verde:#3ecf8e; --verde-bg:#133027; --amarelo:#f2c14e; --amarelo-bg:#332a10; --vermelho:#ff6b6b; --vermelho-bg:#2e1a1d; --azul-bg:#14233f; --azul:#7fb0ff; --cinza-bg:#1c1e29; --cinza:#9aa0b8;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg) var(--bg-glow) fixed; color:var(--texto); -webkit-font-smoothing:antialiased; }
+  #login { max-width:340px; margin:12vh auto 0; padding:36px 30px; background:var(--card); border:1px solid var(--borda); border-radius:18px; text-align:center; }
+  #login h1 { font-size:18px; margin:0 0 6px; } #login p { color:var(--muted); font-size:13px; margin:0 0 18px; }
+  input, select, button, textarea { font-family:inherit; font-size:14px; }
+  input[type=text], input[type=password], select, textarea { background:#0b0c10; color:var(--texto); border:1px solid var(--borda); border-radius:10px; padding:10px 12px; width:100%; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:10px 14px; font-weight:600; color:#fff; background:linear-gradient(135deg,var(--acento),var(--acento2)); }
+  button.sec { background:var(--cinza-bg); color:var(--texto); border:1px solid var(--borda); }
+  button:disabled { opacity:.45; cursor:default; }
+  #app { display:none; max-width:1100px; margin:0 auto; padding:20px 16px 80px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  header h1 { font-size:20px; margin:0; } header span { color:var(--muted); font-size:13px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:14px; }
+  .kpi { background:var(--card); border:1px solid var(--borda); border-radius:12px; padding:12px 14px; }
+  .kpi b { display:block; font-size:22px; } .kpi small { color:var(--muted); font-size:12px; }
+  .barra { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px; align-items:end; }
+  .barra label { font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
+  .acoes { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  #progresso { color:var(--muted); font-size:13px; }
+  .cli { background:var(--card); border:1px solid var(--borda); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+  .cli.feito { opacity:.55; }
+  .topo { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+  .nome { font-weight:700; font-size:15px; } .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .badge { display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; margin-right:6px; }
+  .b-sem { background:var(--verde-bg); color:var(--verde); } .b-10 { background:var(--amarelo-bg); color:var(--amarelo); } .b-15 { background:var(--vermelho-bg); color:var(--vermelho); } .b-pes { background:var(--azul-bg); color:var(--azul); }
+  .grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px 18px; margin:10px 0; font-size:13px; }
+  .grade small { color:var(--muted); display:block; font-size:11px; }
+  .msg { background:#0b0c10; border:1px solid var(--borda); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.5; margin:8px 0; white-space:pre-wrap; }
+  .linha { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .linha select { width:auto; min-width:160px; } .linha input[type=text] { flex:1; min-width:180px; }
+  a.btn { text-decoration:none; display:inline-block; border-radius:10px; padding:10px 14px; font-weight:600; background:#1faa59; color:#fff; font-size:14px; }
+  a.btn.off { background:var(--cinza-bg); color:var(--muted); pointer-events:none; }
+  .erro { color:var(--vermelho); font-size:13px; }
+  @media (max-width:560px) { .linha select, .linha input[type=text] { width:100%; } }
+</style>
+</head>
+<body>
+<div id="login">
+  <h1>Reativação Site</h1><p>Clientes CPF do site Vitanuts</p>
+  <input type="password" id="senha-input" placeholder="Senha de acesso" autocomplete="off">
+  <div id="login-erro" class="erro" style="margin:8px 0;"></div>
+  <button id="entrar" style="width:100%">Entrar</button>
+</div>
+
+<div id="app">
+  <header><div><h1>Reativação — clientes CPF do site</h1><span id="sub-header"></span></div><button class="sec" id="sair">Sair</button></header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="barra">
+    <div><label>Seu nome (entra nas mensagens)</label><input type="text" id="meu-nome" placeholder="Ex.: Ana"></div>
+    <div><label>Pessoa</label><select id="f-pessoa"><option value="0">Todas</option><option value="1">Pessoa 1</option><option value="2">Pessoa 2</option><option value="3">Pessoa 3</option></select></div>
+    <div><label>Quantos clientes (top por valor gasto)</label><select id="f-limite"><option value="50">Top 50</option><option value="100" selected>Top 100</option><option value="200">Top 200</option><option value="500">Top 500</option><option value="3000">Todos do plano</option></select></div>
+    <div><label>Ordem</label><select id="f-ordem"><option value="valor">Maior valor gasto</option><option value="bloco">Urgência (blocos 1 a 4)</option></select></div>
+    <div><label>Status</label><select id="f-status"><option value="">Todos</option></select></div>
+    <div><label>Buscar</label><input type="text" id="f-busca" placeholder="nome ou CPF"></div>
+  </div>
+
+  <div class="acoes">
+    <button id="btn-contatos">Buscar telefone e endereço no Bling</button>
+    <button class="sec" id="btn-csv">Exportar CSV</button>
+    <button class="sec" id="btn-refazer" title="Tenta de novo os que o Bling não encontrou">Refazer não encontrados</button>
+    <span id="progresso"></span>
+  </div>
+
+  <div id="lista"></div>
+</div>
+
+<script>
+(function () {
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxy0qPTTnWNajuHXvjntT-JnIqVtPQPBJKnCUDhZc88L45LVR4nwtK6fb1NsrQR8V0lgA/exec";
+  const KEY_SENHA = "reativacao_senha", KEY_NOME = "reativacao_nome";
+  const $ = (id) => document.getElementById(id);
+  let dados = null; // resposta da lista
+  let ocupado = false;
+
+  const senhaSalva = () => localStorage.getItem(KEY_SENHA) || "";
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const moeda = (v) => "R$ " + Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dataBr = (iso) => iso ? iso.split("-").reverse().join("/") : "";
+  const cpfFmt = (d) => d.length === 11 ? d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9) : d;
+
+  function chamar(params) {
+    return new Promise((resolve, reject) => {
+      const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      const script = document.createElement("script");
+      const limpar = () => { delete window[cb]; script.remove(); clearTimeout(t); };
+      const t = setTimeout(() => { limpar(); reject(new Error("tempo_esgotado")); }, 60000);
+      window[cb] = (d) => { limpar(); resolve(d); };
+      script.onerror = () => { limpar(); reject(new Error("falha_rede")); };
+      const q = Object.keys(params).map((k) => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
+      script.src = WEBAPP_URL + "?" + q + "&callback=" + cb;
+      document.body.appendChild(script);
+    });
+  }
+  async function api(extra) {
+    const p = Object.assign({ senha: senhaSalva(), reativacao: "1", pessoa: $("f-pessoa").value, limite: $("f-limite").value, ordenar: $("f-ordem").value }, extra || {});
+    const r = await chamar(p);
+    if (r.erro === "senha_incorreta") { localStorage.removeItem(KEY_SENHA); location.reload(); throw new Error("senha_incorreta"); }
+    return r;
+  }
+
+  function mensagemFinal(c) {
+    const nome = ($("meu-nome").value || "").trim() || "[seu nome]";
+    return c.mensagem.replace("[seu nome]", nome);
+  }
+  function telefoneWhats(contato) {
+    if (!contato || !contato.achou) return "";
+    const cand = [contato.celular, contato.telefone];
+    for (let i = 0; i < cand.length; i++) {
+      let d = String(cand[i] || "").replace(/\D/g, "");
+      if (d.length === 10 || d.length === 11) return "55" + d;
+      if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) return d;
+    }
+    return "";
+  }
+  function enderecoTxt(c) {
+    if (!c || !c.achou) return "";
+    const partes = [c.endereco, c.numero, c.complemento].filter(Boolean).join(", ");
+    return [partes, c.bairro, [c.cidade, c.uf].filter(Boolean).join("/"), c.cep].filter(Boolean).join(" - ");
+  }
+
+  function filtrados() {
+    const st = $("f-status").value, b = $("f-busca").value.trim().toLowerCase();
+    return dados.clientes.filter((c) => (!st || c.status.status === st) && (!b || c.nome.toLowerCase().indexOf(b) !== -1 || c.cnpj.indexOf(b.replace(/\D/g, "") || "§") !== -1));
+  }
+
+  function renderKpis() {
+    const cl = dados.clientes, rs = dados.resumo_status;
+    const contatados = cl.length - (rs["Pendente"] || 0);
+    const resp = (rs["Respondeu"] || 0) + (rs["Comprou"] || 0);
+    const comp = rs["Comprou"] || 0;
+    const kp = [[cl.length, "na lista"], [contatados, "contatados"], [resp, "responderam"], [comp, "compraram"], [contatados ? (comp / contatados * 100).toFixed(1) + "%" : "0%", "conversão"], [cl.filter((c) => !c.contato).length, "sem telefone buscado"]];
+    $("kpis").innerHTML = kp.map((k) => '<div class="kpi"><b>' + k[0] + "</b><small>" + k[1] + "</small></div>").join("");
+    $("sub-header").textContent = "Hoje " + dataBr(dados.hoje) + " · " + dados.total_no_plano + " clientes no plano de " + dados.total_clientes_site_cpf + " CPFs do site · " + dados.aguardando_ciclo + " ainda no ciclo · " + dados.sem_contato_manual + " sem contato manual";
+  }
+
+  function badgeDesconto(c) {
+    if (c.desconto === "Não") return '<span class="badge b-sem">Sem desconto</span>';
+    return '<span class="badge ' + (c.cupom === "VOLTA10" ? "b-10" : "b-15") + '">' + esc(c.desconto) + " · " + esc(c.cupom) + "</span>";
+  }
+
+  function renderLista() {
+    const lista = filtrados();
+    if (!lista.length) { $("lista").innerHTML = '<p style="color:var(--muted)">Nenhum cliente com esses filtros.</p>'; return; }
+    $("lista").innerHTML = lista.map((c) => {
+      const ct = c.contato, tel = telefoneWhats(ct), msg = mensagemFinal(c);
+      const wa = tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "";
+      const opts = dados.status_validos.map((s) => '<option' + (s === c.status.status ? " selected" : "") + ">" + esc(s) + "</option>").join("");
+      let contatoHtml;
+      if (!ct) contatoHtml = '<div><small>Contato</small><span style="color:var(--muted)">ainda não buscado</span></div>';
+      else if (!ct.achou) contatoHtml = '<div><small>Contato</small><span class="erro">não encontrado no Bling</span></div>';
+      else contatoHtml = "<div><small>Celular / telefone</small>" + esc([ct.celular, ct.telefone].filter(Boolean).join(" / ") || "sem telefone") + "</div><div><small>E-mail</small>" + esc(ct.email || "—") + "</div><div><small>Endereço</small>" + esc(enderecoTxt(ct) || "—") + "</div>";
+      return '<div class="cli' + (["Comprou", "Não quer contato", "Sem resposta"].indexOf(c.status.status) !== -1 ? " feito" : "") + '" data-cpf="' + c.cnpj + '">' +
+        '<div class="topo"><div><div class="nome">#' + c.rank_valor + " · " + esc(c.nome) + '</div><div class="sub">CPF ' + cpfFmt(c.cnpj) + " · Pessoa " + c.pessoa + " · bloco " + c.bloco + " · ordem " + c.ordem + "</div></div>" +
+        "<div>" + badgeDesconto(c) + '<span class="badge b-pes">' + esc(c.acao) + "</span></div></div>" +
+        '<div class="grade"><div><small>Última compra</small>' + dataBr(c.ultima_compra) + " (" + c.dias + " dias)</div><div><small>Compras / total</small>" + c.compras + " · " + moeda(c.total) + "</div><div><small>Último produto</small>" + esc(c.produto || "—") + "</div>" + contatoHtml + "</div>" +
+        '<div class="msg">' + esc(msg) + "</div>" +
+        '<div class="linha"><a class="btn' + (wa ? "" : " off") + '" ' + (wa ? 'href="' + wa + '" target="_blank" rel="noopener"' : "") + ">" + (wa ? "Abrir WhatsApp" : "Sem telefone") + '</a><button class="sec" data-copiar="' + c.cnpj + '">Copiar mensagem</button>' +
+        '<select data-status="' + c.cnpj + '">' + opts + '</select><input type="text" data-obs="' + c.cnpj + '" placeholder="Observação" value="' + esc(c.status.obs || "") + '"></div>' +
+        (c.status.data_1o_contato ? '<div class="sub" style="margin-top:6px">1º contato em ' + dataBr(c.status.data_1o_contato) + "</div>" : "") + "</div>";
+    }).join("");
+  }
+
+  async function carregar() {
+    $("progresso").textContent = "Carregando…";
+    try {
+      dados = await api();
+      if (dados.erro) { $("progresso").innerHTML = '<span class="erro">Erro: ' + esc(dados.erro) + " " + esc(dados.detalhe || "") + "</span>"; return; }
+      const sel = $("f-status"), atual = sel.value;
+      sel.innerHTML = '<option value="">Todos</option>' + dados.status_validos.map((s) => "<option>" + esc(s) + "</option>").join("");
+      sel.value = atual;
+      $("progresso").textContent = "";
+      renderKpis(); renderLista();
+    } catch (e) { if (e.message !== "senha_incorreta") $("progresso").innerHTML = '<span class="erro">Falha: ' + esc(e.message) + "</span>"; }
+  }
+
+  async function buscarContatos(refazer) {
+    if (ocupado) return; ocupado = true;
+    $("btn-contatos").disabled = true; $("btn-refazer").disabled = true;
+    try {
+      let feitos = 0, restantes = 1, guard = 0;
+      while (restantes > 0 && guard++ < 700) {
+        const r = await api({ acao: "contatos", refazer: refazer ? "1" : "0" });
+        if (r.erro && !r.processados) { $("progresso").innerHTML = '<span class="erro">Parou: ' + esc(r.erro) + " " + esc(r.detalhe || "") + "</span>"; break; }
+        feitos += r.processados || 0; restantes = r.restantes || 0;
+        Object.keys(r.contatos || {}).forEach((cpf) => { const c = dados.clientes.find((x) => x.cnpj === cpf); if (c) c.contato = r.contatos[cpf]; });
+        $("progresso").textContent = "Buscando no Bling… " + feitos + " feitos, " + restantes + " faltando";
+        renderKpis(); renderLista();
+        if (r.erro) { $("progresso").innerHTML = '<span class="erro">Parou: ' + esc(r.erro) + "</span>"; break; }
+        if (!r.processados) break;
+      }
+      if (restantes === 0) $("progresso").textContent = "Contatos atualizados (" + feitos + " buscados agora).";
+    } catch (e) { $("progresso").innerHTML = '<span class="erro">Falha: ' + esc(e.message) + "</span>"; }
+    ocupado = false; $("btn-contatos").disabled = false; $("btn-refazer").disabled = false;
+  }
+
+  async function salvarStatus(cpf) {
+    const c = dados.clientes.find((x) => x.cnpj === cpf); if (!c) return;
+    const card = document.querySelector('.cli[data-cpf="' + cpf + '"]');
+    const status = card.querySelector("[data-status]").value, obs = card.querySelector("[data-obs]").value;
+    try {
+      const r = await api({ acao: "status", cnpj: cpf, status: status, obs: obs });
+      if (r.ok) { c.status = r.status; dados.resumo_status = {}; dados.status_validos.forEach((s) => dados.resumo_status[s] = 0); dados.clientes.forEach((x) => dados.resumo_status[x.status.status]++); renderKpis(); renderLista(); }
+      else $("progresso").innerHTML = '<span class="erro">Não gravou: ' + esc(r.mensagem || r.erro) + "</span>";
+    } catch (e) { $("progresso").innerHTML = '<span class="erro">Falha ao salvar: ' + esc(e.message) + "</span>"; }
+  }
+
+  function exportarCsv() {
+    const linhas = [["Rank","Pessoa","Bloco","Cliente","CPF","Celular","Telefone","E-mail","Endereco","Dias sem comprar","Ultima compra","Compras","Total","Ultimo produto","Acao","Desconto","Cupom","Status","Obs","Mensagem"]];
+    filtrados().forEach((c) => { const t = c.contato && c.contato.achou ? c.contato : {};
+      linhas.push([c.rank_valor, c.pessoa, c.bloco, c.nome, cpfFmt(c.cnpj), t.celular || "", t.telefone || "", t.email || "", enderecoTxt(t), c.dias, dataBr(c.ultima_compra), c.compras, String(c.total).replace(".", ","), c.produto, c.acao, c.desconto, c.cupom, c.status.status, c.status.obs || "", mensagemFinal(c)]); });
+    const csv = "\ufeff" + linhas.map((l) => l.map((v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"').join(";")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "reativacao_site_" + dados.hoje + ".csv"; a.click();
+  }
+
+  function mostrarApp() { $("login").style.display = "none"; $("app").style.display = "block"; $("meu-nome").value = localStorage.getItem(KEY_NOME) || ""; carregar(); }
+  async function entrar(senha) {
+    $("login-erro").textContent = "";
+    try {
+      const r = await chamar({ senha: senha, secao: "sync_estado" });
+      if (r.erro === "senha_incorreta") { $("login-erro").textContent = "Senha incorreta."; localStorage.removeItem(KEY_SENHA); return; }
+      localStorage.setItem(KEY_SENHA, senha); mostrarApp();
+    } catch (e) { $("login-erro").textContent = "Falha ao conectar (" + e.message + ")."; }
+  }
+
+  $("entrar").onclick = () => { const s = $("senha-input").value; if (s) entrar(s); };
+  $("senha-input").addEventListener("keydown", (ev) => { if (ev.key === "Enter") $("entrar").click(); });
+  $("sair").onclick = () => { localStorage.removeItem(KEY_SENHA); location.reload(); };
+  $("btn-contatos").onclick = () => buscarContatos(false);
+  $("btn-refazer").onclick = () => buscarContatos(true);
+  $("btn-csv").onclick = exportarCsv;
+  ["f-pessoa", "f-limite", "f-ordem"].forEach((id) => $(id).addEventListener("change", carregar));
+  ["f-status", "f-busca"].forEach((id) => $(id).addEventListener("input", () => dados && renderLista()));
+  $("meu-nome").addEventListener("input", () => { localStorage.setItem(KEY_NOME, $("meu-nome").value); if (dados) renderLista(); });
+  $("lista").addEventListener("change", (ev) => { const cpf = ev.target.getAttribute("data-status") || ev.target.getAttribute("data-obs"); if (cpf) salvarStatus(cpf); });
+  $("lista").addEventListener("click", (ev) => {
+    const cpf = ev.target.getAttribute && ev.target.getAttribute("data-copiar"); if (!cpf) return;
+    const c = dados.clientes.find((x) => x.cnpj === cpf);
+    navigator.clipboard.writeText(mensagemFinal(c)).then(() => { ev.target.textContent = "Copiado!"; setTimeout(() => ev.target.textContent = "Copiar mensagem", 1500); });
+  });
+  if (senhaSalva()) entrar(senhaSalva());
+})();
+</script>
+</body>
+</html>
